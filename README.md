@@ -1,0 +1,1 @@
+# KolikCheck.AI
