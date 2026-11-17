@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>KolikCheck.AI — Know what you're buying.</title>
+<style>
+:root{--bg:#0d1014;--card:#151a21;--line:#262e3a;--tx:#f3f6fa;--mut:#98a4b5;--blue:#2f7bff;--green:#2de0a5;--red:#ff5d6c;--amb:#ffb84d}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;min-height:100vh}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+
+/* ── layout ── */
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+.page{display:none}.page.active{display:block}
+.sec{padding:60px 20px}
+.center{display:flex;align-items:center;justify-content:center;min-height:60vh}
+
+/* ── nav ── */
+nav.top{position:sticky;top:0;z-index:30;backdrop-filter:blur(14px);background:#0d1014cc;border-bottom:1px solid var(--line)}
+nav.top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;gap:10px;align-items:center;font-weight:800;font-size:1.1rem;cursor:pointer}
+.logo-icon{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--green));display:grid;place-items:center;font-weight:900;color:#04121f;font-size:.9rem}
+.logo b{color:var(--green)}
+.nav-links{display:flex;gap:24px;align-items:center;color:var(--mut)}
+.nav-links a{cursor:pointer;transition:.15s}.nav-links a:hover{color:var(--tx)}
+.burger{display:none;background:none;border:0;color:var(--tx);font-size:1.5rem;cursor:pointer}
+.nav-mobile{display:none;flex-direction:column;gap:14px;padding:20px;border-top:1px solid var(--line);background:#0d1014f8}
+.nav-mobile.open{display:flex}
+.nav-mobile a{cursor:pointer;color:var(--mut)}.nav-mobile a:hover{color:var(--tx)}
+
+/* ── buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;cursor:pointer;font-family:inherit;font-weight:600;font-size:1rem;padding:13px 22px;border-radius:12px;background:linear-gradient(135deg,var(--blue),#1a5fe0);color:#fff;box-shadow:0 6px 22px #2f7bff44;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px #2f7bff66}
+.btn.sm{padding:9px 16px;font-size:.9rem}
+.btn.full{width:100%;margin-top:16px}
+.btn.ghost{background:transparent;border:1px solid var(--line);box-shadow:none;color:var(--tx)}
+.btn.ghost:hover{border-color:var(--blue)}
+.btn.red{background:var(--red);box-shadow:0 6px 20px #ff5d6c33}
+
+/* ── hero ── */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:72px 20px 48px}
+h1{font-size:clamp(2.4rem,6vw,4rem);line-height:1.05;letter-spacing:-.03em;margin-bottom:18px}
+.lead{font-size:1.1rem;color:var(--mut);margin-bottom:28px;max-width:500px}
+h2{font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;margin-bottom:24px}
+h3{font-size:1.05rem;margin-bottom:10px}
+
+/* ── cards ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 12px 32px #0007}
+.card p{color:var(--mut);font-size:.95rem}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.ico{font-size:1.6rem;margin-bottom:10px}
+.num{width:38px;height:38px;border-radius:50%;background:#2f7bff22;color:var(--blue);display:grid;place-items:center;font-weight:800;margin-bottom:12px}
+
+/* ── form ── */
+.field{margin-bottom:16px}
+label{display:block;font-size:.9rem;font-weight:600;margin-bottom:6px}
+input[type=text],input[type=number]{width:100%;background:#0f1318;border:1px solid var(--line);color:var(--tx);padding:12px 14px;border-radius:12px;font-size:1rem;font-family:inherit;transition:.15s}
+input:focus{border-color:var(--blue);outline:none}
+input.invalid{border-color:var(--red)!important}
+.err{color:var(--red);font-size:.87rem;margin-top:5px}
+.hint{font-size:.87rem;color:var(--mut);margin-top:10px}
+.hint a{color:var(--green);cursor:pointer;text-decoration:underline}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* ── upload ── */
+.drop{border:2px dashed #35415a;border-radius:14px;padding:24px;text-align:center;color:var(--mut);cursor:pointer;transition:.2s;user-select:none}
+.drop strong{color:var(--tx);display:block;margin-bottom:4px}
+.drop p{font-size:.85rem}
+.drop:hover,.drop.over{border-color:var(--green);background:#2de0a50c}
+.thumbs{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-top:12px}
+.thumbs li{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbs button{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;border:0;background:#000b;color:#fff;cursor:pointer;font-size:.8rem}
+.thumbs.big{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+
+/* ── loading ── */
+.spin{width:72px;height:72px;border-radius:50%;border:5px solid #26334a;border-top-color:var(--blue);border-right-color:var(--green);animation:sp 1s linear infinite;margin:0 auto 22px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.bar{height:6px;background:#222b38;border-radius:9px;overflow:hidden;margin:16px 0}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .6s ease}
+.stages{list-style:none;text-align:left;max-width:300px;margin:0 auto}
+.stages li{display:flex;gap:12px;align-items:center;padding:7px 0;color:var(--mut);font-size:.95rem}
+.stages .s-icon{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:.8rem;flex-shrink:0}
+.stages .now{color:var(--tx)}.stages .now .s-icon{border-color:var(--blue);color:var(--blue)}
+.stages .done{color:var(--green)}.stages .done .s-icon{background:#2de0a522;border-color:var(--green)}
+
+/* ── report ── */
+.rhead{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:20px}
+.rhead code{color:var(--green);letter-spacing:.06em;font-size:.95rem}
+.demo-banner{background:#ffb84d14;border:1px solid #ffb84d55;color:var(--amb);padding:12px 16px;border-radius:12px;font-size:.88rem;margin-bottom:22px}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.center2{text-align:center}
+.spec-row{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:.93rem}
+.spec-row:last-child{border:0}
+.spec-row .k{color:var(--mut)}.spec-row .v{text-align:right;word-break:break-all}
+.chip{padding:3px 10px;border-radius:99px;font-size:.78rem;font-weight:700;white-space:nowrap}
+.chip.Low{background:#2de0a522;color:var(--green)}
+.chip.Medium,.chip.Moderate{background:#ffb84d22;color:var(--amb)}
+.chip.High{background:#ff5d6c22;color:var(--red)}
+.damage-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.damage-row:last-child{border:0}
+.damage-row .info strong{display:block;margin-bottom:2px;font-size:.95rem}
+.damage-row .info span{color:var(--mut);font-size:.88rem}
+.meter{height:10px;border-radius:9px;background:linear-gradient(90deg,var(--green),var(--amb),var(--red));position:relative;margin:20px 0 16px}
+.meter-pin{position:absolute;top:-5px;width:6px;height:20px;border-radius:4px;background:#fff;transform:translateX(-50%);box-shadow:0 0 0 3px var(--bg)}
+.recs{padding-left:20px;color:var(--mut)}.recs li{margin-bottom:8px;font-size:.95rem}
+.score-ring{display:flex;flex-direction:column;align-items:center;gap:6px}
+.h-score{font-size:1rem;font-weight:600}
+
+/* ── footer ── */
+footer{border-top:1px solid var(--line);padding:28px 0;text-align:center;color:var(--mut);font-size:.88rem;margin-top:40px}
+footer strong{color:var(--tx)}
+
+/* ── responsive ── */
+@media(max-width:900px){.hero{grid-template-columns:1fr;padding-top:40px}}
+@media(max-width:700px){
+  .burger{display:block}.nav-links{display:none}
+  .cols2,.row3{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav class="top">
+  <div class="wrap">
+    <div class="logo" onclick="goTo('home')">
+      <div class="logo-icon">K</div>
+      <span>KolikCheck<b>.AI</b></span>
+    </div>
+    <div class="nav-links">
+      <a onclick="goTo('home');scrollTo(0,0)">Home</a>
+      <a onclick="goTo('home');setTimeout(()=>document.getElementById('features').scrollIntoView({behavior:'smooth'}),50)">Features</a>
+      <a onclick="goTo('home');setTimeout(()=>document.getElementById('how').scrollIntoView({behavior:'smooth'}),50)">How it works</a>
+      <a onclick="goTo('inspect')" class="btn sm">Inspect a car</a>
+    </div>
+    <button class="burger" onclick="toggleMobile()" aria-label="Menu">☰</button>
+  </div>
+  <div class="nav-mobile" id="navMobile">
+    <a onclick="goTo('home');toggleMobile()">Home</a>
+    <a onclick="goTo('inspect');toggleMobile()">Inspect a car</a>
+    <a onclick="goTo('report');toggleMobile()">Latest report</a>
+  </div>
+</nav>
+
+<!-- ══ PAGE: HOME ══ -->
+<div class="page active" id="page-home">
+  <section class="hero wrap">
+    <div>
+      <h1>Buy smarter.<br>Drive safer.</h1>
+      <p class="lead">KolikCheck.AI checks a used car's VIN and photos, then shows you its condition, hidden risks and what to ask the seller before you pay.</p>
+      <button class="btn" onclick="goTo('inspect')">Inspect a car →</button>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label for="heroVin">Vehicle VIN</label>
+        <input type="text" id="heroVin" maxlength="20" placeholder="e.g. JTDKB20U093123456" oninput="this.value=this.value.toUpperCase()" />
+        <div class="err" id="heroVinErr" style="display:none"></div>
+      </div>
+      <div id="heroUpload"></div>
+      <button class="btn full" onclick="heroSubmit()">Analyze Vehicle</button>
+      <p class="hint">Need more options? <a onclick="goTo('inspect')">Use the full form</a></p>
+    </div>
+  </section>
+
+  <section class="sec wrap" id="features">
+    <h2>Everything you need before you pay</h2>
+    <div class="grid4">
+      <div class="card"><div class="ico">🔎</div><h3>VIN Decoder</h3><p>Read the make, model year and factory specifications encoded in the 17-character VIN.</p></div>
+      <div class="card"><div class="ico">📷</div><h3>AI Visual Inspection</h3><p>Upload photos and get visible damage flagged panel by panel before you meet the seller.</p></div>
+      <div class="card"><div class="ico">📋</div><h3>Vehicle History</h3><p>See registration, ownership history and incident records gathered in one place.</p></div>
+      <div class="card"><div class="ico">⚠️</div><h3>AI Risk Assessment</h3><p>Get a clear risk level and an overall condition score so you know exactly where you stand.</p></div>
+    </div>
+  </section>
+
+  <section class="sec wrap" id="how">
+    <h2>How it works</h2>
+    <div class="grid4" style="max-width:860px">
+      <div class="card"><div class="num">1</div><h3>Enter the VIN</h3><p>Type the 17-character VIN from the car or its documents.</p></div>
+      <div class="card"><div class="num">2</div><h3>Add photos</h3><p>Upload clear photos of the body, interior and engine bay.</p></div>
+      <div class="card"><div class="num">3</div><h3>Read your report</h3><p>Review the condition score, risks and what to check before buying.</p></div>
+    </div>
+  </section>
+
+  <footer><strong>KolikCheck.AI</strong> — Know what you're buying. &nbsp;·&nbsp; Prototype, demo data only.</footer>
+</div>
+
+<!-- ══ PAGE: INSPECT ══ -->
+<div class="page" id="page-inspect">
+  <main class="wrap sec" style="max-width:660px">
+    <h1 style="font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:8px">Inspect a vehicle</h1>
+    <p class="lead" style="margin-bottom:28px">Enter the VIN and add photos. Brand, model and year are optional.</p>
+    <div class="card">
+      <div class="field">
+        <label for="inspVin">VIN (required)</label>
+        <input type="text" id="inspVin" maxlength="20" placeholder="17 characters" oninput="this.value=this.value.toUpperCase()" />
+        <div class="err" id="inspVinErr" style="display:none"></div>
+      </div>
+      <div class="row3">
+        <div class="field"><label for="inspMake">Brand</label><input type="text" id="inspMake" placeholder="Toyota" /></div>
+        <div class="field"><label for="inspModel">Model</label><input type="text" id="inspModel" placeholder="Camry" /></div>
+        <div class="field">
+          <label for="inspYear">Year</label>
+          <input type="number" id="inspYear" placeholder="2019" min="1980" max="2027" />
+          <div class="err" id="inspYearErr" style="display:none"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Photos (optional — needed for visual inspection)</label>
+        <div id="inspUpload"></div>
+      </div>
+      <button class="btn full" onclick="inspSubmit()">Analyze Vehicle</button>
+    </div>
+  </main>
+  <footer><strong>KolikCheck.AI</strong> — Know what you're buying. &nbsp;·&nbsp; Prototype, demo data only.</footer>
+</div>
+
+<!-- ══ PAGE: ANALYZING ══ -->
+<div class="page" id="page-analyzing">
+  <div class="center">
+    <div class="card" style="width:100%;max-width:400px;text-align:center;padding:36px 28px" id="analyzingCard">
+      <div class="spin" id="analyzeSpin"></div>
+      <h2 id="analyzeTitle" style="margin-bottom:16px">Analyzing your vehicle</h2>
+      <div class="bar"><div class="bar-fill" id="analyzeBar" style="width:0%"></div></div>
+      <ul class="stages" id="stageList"></ul>
+      <div id="analyzeError" style="display:none;margin-top:16px">
+        <div class="err" id="analyzeErrMsg" style="margin-bottom:16px;font-size:1rem"></div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button class="btn ghost" onclick="goTo('inspect')">Edit details</button>
+          <button class="btn" onclick="startAnalysis()">Try again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: REPORT ══ -->
+<div class="page" id="page-report">
+  <main class="wrap sec" id="reportContent">
+    <div class="center" style="min-height:40vh">
+      <div class="card" style="text-align:center;max-width:420px">
+        <div style="font-size:2rem;margin-bottom:12px">📋</div>
+        <h2>No report yet</h2>
+        <p style="margin:8px 0 20px">Run an inspection and your report will appear here.</p>
+        <button class="btn" onclick="goTo('inspect')">Start an inspection</button>
+      </div>
+    </div>
+  </main>
+  <footer><strong>KolikCheck.AI</strong> — Know what you're buying. &nbsp;·&nbsp; Prototype, demo data only.</footer>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+const state = { draft: null, report: null }
+
+// ═══════════════════════════════════════════════
+// DEMO DATA
+// ═══════════════════════════════════════════════
+const DEMO_SPECS = [
+  ['Engine','2.5 L, 4-cylinder petrol'],
+  ['Transmission','8-speed automatic'],
+  ['Drivetrain','All-wheel drive'],
+  ['Body type','Sedan'],
+  ['Estimated mileage','87,000 km'],
+]
+const DEMO_DAMAGES = [
+  { part:'Front bumper', issue:'Light scratches and paint chips', severity:'Low' },
+  { part:'Rear left door', issue:'Paint tone differs from nearby panels — possible repaint', severity:'Medium' },
+  { part:'Windshield', issue:'Small chip, lower right corner', severity:'Low' },
+]
+const DEMO_HISTORY = [
+  ['Registration','Kazakhstan, 2 previous owners'],
+  ['Theft / wanted check','No record found'],
+  ['Reported accidents','1 minor incident (2021)'],
+]
+const DEMO_RECS = [
+  'Ask the seller for service records and compare the mileage.',
+  'Have a mechanic inspect the rear left door for body filler or repaint.',
+  'Take a test drive and listen for noise from the engine and gearbox.',
+  'Confirm the VIN plate on the car matches the VIN on the documents.',
+]
+const RISK_ADVICE = {
+  Low:'Overall risk is low. Confirm the details below in person before paying.',
+  Moderate:'Risk is moderate. Negotiate the price and inspect the flagged areas before you buy.',
+  High:'Risk is high. Do not pay a deposit until a qualified mechanic has inspected the car.',
+}
+const VIN_MAKES = { JT:'Toyota', JHM:'Honda', KM:'Hyundai', KN:'Kia', WVW:'Volkswagen', WBA:'BMW', WDD:'Mercedes-Benz', WAU:'Audi', XTA:'Lada', '5YJ':'Tesla' }
+const YEAR_CODES = 'ABCDEFGHJKLMNPRSTVWXY123456789'
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+function goTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById('page-' + page).classList.add('active')
+  window.scrollTo(0, 0)
+}
+
+function toggleMobile() {
+  const m = document.getElementById('navMobile')
+  m.classList.toggle('open')
+}
+
+// ═══════════════════════════════════════════════
+// UPLOAD ZONES
+// ═══════════════════════════════════════════════
+const photoStores = {}
+
+function createUploadZone(containerId) {
+  if (!photoStores[containerId]) photoStores[containerId] = []
+  const photos = photoStores[containerId]
+  const el = document.getElementById(containerId)
+  render()
+
+  function render() {
+    const html = `
+      <div class="drop" id="${containerId}-drop">
+        <strong>Add car photos</strong>
+        <p>Drag & drop or click to choose. JPG, PNG or WEBP, max 8 MB each.</p>
+        <input type="file" id="${containerId}-input" hidden multiple accept="image/jpeg,image/png,image/webp"/>
+      </div>
+      <div id="${containerId}-errbox" class="err" style="display:none;margin-top:6px"></div>
+      <ul class="thumbs" id="${containerId}-thumbs"></ul>
+    `
+    el.innerHTML = html
+    bindZone(containerId)
+  }
+
+  function bindZone(cid) {
+    const drop = document.getElementById(cid + '-drop')
+    const input = document.getElementById(cid + '-input')
+
+    drop.addEventListener('click', () => input.click())
+    drop.addEventListener('keydown', e => (e.key === 'Enter' || e.key === ' ') && input.click())
+    drop.setAttribute('tabindex', '0')
+    drop.setAttribute('role', 'button')
+
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over') })
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'))
+    drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files, cid) })
+    input.addEventListener('change', e => { addFiles(e.target.files, cid); input.value = '' })
+
+    renderThumbs(cid)
+  }
+
+  function addFiles(files, cid) {
+    const errBox = document.getElementById(cid + '-errbox')
+    const problems = []
+    const store = photoStores[cid]
+    Array.from(files).forEach(f => {
+      if (!['image/jpeg','image/png','image/webp'].includes(f.type)) { problems.push(`${f.name}: use JPG, PNG or WEBP.`); return }
+      if (f.size > 8 * 1024 * 1024) { problems.push(`${f.name}: larger than 8 MB.`); return }
+      if (store.length >= 10) { problems.push('You can add up to 10 photos.'); return }
+      const id = cid + '-' + Date.now() + '-' + Math.random()
+      store.push({ id, file: f, url: URL.createObjectURL(f) })
+    })
+    errBox.textContent = [...new Set(problems)].join(' ')
+    errBox.style.display = problems.length ? 'block' : 'none'
+    renderThumbs(cid)
+  }
+
+  function renderThumbs(cid) {
+    const ul = document.getElementById(cid + '-thumbs')
+    if (!ul) return
+    const store = photoStores[cid]
+    if (!store.length) { ul.innerHTML = ''; return }
+    ul.innerHTML = store.map(p =>
+      `<li><img src="${p.url}" alt="${p.file.name}"/>
+       <button type="button" onclick="removePhoto('${cid}','${p.id}')" aria-label="Remove photo">✕</button></li>`
+    ).join('')
+  }
+}
+
+function removePhoto(cid, id) {
+  const store = photoStores[cid]
+  const idx = store.findIndex(p => p.id === id)
+  if (idx > -1) { URL.revokeObjectURL(store[idx].url); store.splice(idx, 1) }
+  document.getElementById(cid + '-thumbs').innerHTML = ''
+  const remaining = store
+  remaining.forEach(p => {
+    const ul = document.getElementById(cid + '-thumbs')
+    const li = document.createElement('li')
+    li.innerHTML = `<img src="${p.url}" alt="${p.file.name}"/>
+      <button type="button" onclick="removePhoto('${cid}','${p.id}')" aria-label="Remove photo">✕</button>`
+    ul.appendChild(li)
+  })
+}
+
+// ═══════════════════════════════════════════════
+// VALIDATION
+// ═══════════════════════════════════════════════
+function normalizeVin(v) { return v.toUpperCase().replace(/[^A-Z0-9]/g,'') }
+
+function validateVin(v) {
+  const vin = normalizeVin(v)
+  if (!vin) return 'Enter the 17-character VIN.'
+  if (vin.length !== 17) return `A VIN has 17 characters. You entered ${vin.length}.`
+  if (/[IOQ]/.test(vin)) return 'A VIN never contains the letters I, O or Q.'
+  return ''
+}
+
+function validateYear(v) {
+  if (!v) return ''
+  const y = Number(v)
+  const max = new Date().getFullYear() + 1
+  return (Number.isInteger(y) && y >= 1980 && y <= max) ? '' : `Enter a year from 1980 to ${max}.`
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById(id)
+  el.textContent = msg
+  el.style.display = msg ? 'block' : 'none'
+}
+
+// ═══════════════════════════════════════════════
+// FORM SUBMIT
+// ═══════════════════════════════════════════════
+function heroSubmit() {
+  const vin = document.getElementById('heroVin').value
+  const msg = validateVin(vin)
+  showErr('heroVinErr', msg)
+  if (msg) return
+  state.draft = { vin: normalizeVin(vin), make: '', model: '', year: '', photos: photoStores['heroUpload'] || [] }
+  goTo('analyzing')
+  startAnalysis()
+}
+
+function inspSubmit() {
+  const vin = document.getElementById('inspVin').value
+  const year = document.getElementById('inspYear').value
+  const vinMsg = validateVin(vin)
+  const yearMsg = validateYear(year)
+  showErr('inspVinErr', vinMsg)
+  showErr('inspYearErr', yearMsg)
+  if (vinMsg || yearMsg) return
+  state.draft = {
+    vin: normalizeVin(vin),
+    make: document.getElementById('inspMake').value.trim(),
+    model: document.getElementById('inspModel').value.trim(),
+    year: year,
+    photos: photoStores['inspUpload'] || []
+  }
+  goTo('analyzing')
+  startAnalysis()
+}
+
+// ═══════════════════════════════════════════════
+// ANALYSIS (SIMULATED)
+// ═══════════════════════════════════════════════
+const STAGES = [
+  'Validating VIN',
+  'Processing vehicle information',
+  'Analyzing uploaded images',
+  'Preparing vehicle report',
+]
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)) }
+
+function renderStages(current) {
+  const ul = document.getElementById('stageList')
+  ul.innerHTML = STAGES.map((s, i) => {
+    const cls = i < current ? 'done' : i === current ? 'now' : ''
+    const icon = i < current ? '✓' : i === current ? '→' : ''
+    return `<li class="${cls}"><span class="s-icon">${icon}</span>${s}</li>`
+  }).join('')
+}
+
+function decodeVin(vin) {
+  const make = VIN_MAKES[vin.slice(0,3)] || VIN_MAKES[vin.slice(0,2)] || ''
+  const i = YEAR_CODES.indexOf(vin[9])
+  const year = i < 0 ? '' : (i < 21 ? 2010 + i : 2001 + (i - 21)).toString()
+  return { make, year }
+}
+
+async function startAnalysis() {
+  const draft = state.draft
+  if (!draft) return
+
+  // reset UI
+  document.getElementById('analyzeSpin').style.display = 'block'
+  document.getElementById('analyzeTitle').textContent = 'Analyzing your vehicle'
+  document.getElementById('analyzeBar').style.width = '0%'
+  document.getElementById('analyzeError').style.display = 'none'
+
+  try {
+    // stage 0
+    renderStages(0)
+    document.getElementById('analyzeBar').style.width = '10%'
+    await delay(800)
+    const vinMsg = validateVin(draft.vin)
+    if (vinMsg) throw new Error(vinMsg)
+
+    // stage 1
+    renderStages(1)
+    document.getElementById('analyzeBar').style.width = '35%'
+    await delay(900)
+    const decoded = decodeVin(draft.vin)
+
+    // stage 2
+    renderStages(2)
+    document.getElementById('analyzeBar').style.width = '65%'
+    await delay(1000)
+    const hasPhotos = draft.photos && draft.photos.length > 0
+    const damages = hasPhotos ? DEMO_DAMAGES : []
+
+    // stage 3
+    renderStages(3)
+    document.getElementById('analyzeBar').style.width = '90%'
+    await delay(700)
+
+    // build report
+    const seed = [...draft.vin].reduce((s, c) => s + c.charCodeAt(0), 0)
+    const score = 60 + (seed % 31)
+    const risk = score >= 80 ? 'Low' : score >= 70 ? 'Moderate' : 'High'
+    state.report = {
+      vin: draft.vin,
+      vehicle: { make: draft.make || decoded.make, model: draft.model, year: draft.year || decoded.year },
+      specs: DEMO_SPECS,
+      history: DEMO_HISTORY,
+      score, risk, damages,
+      photos: draft.photos.map(p => p.url),
+      recs: [RISK_ADVICE[risk], ...DEMO_RECS],
+      generatedAt: new Date().toLocaleString(),
+    }
+
+    document.getElementById('analyzeBar').style.width = '100%'
+    renderStages(STAGES.length)
+    await delay(400)
+    renderReport()
+    goTo('report')
+
+  } catch(err) {
+    document.getElementById('analyzeSpin').style.display = 'none'
+    document.getElementById('analyzeTitle').textContent = 'Analysis stopped'
+    document.getElementById('analyzeErrMsg').textContent = err.message
+    document.getElementById('analyzeError').style.display = 'block'
+  }
+}
+
+// ═══════════════════════════════════════════════
+// REPORT RENDER
+// ═══════════════════════════════════════════════
+function chip(severity) {
+  return `<span class="chip ${severity}">${severity}</span>`
+}
+
+function specRows(rows) {
+  return rows.map(([k,v]) =>
+    `<div class="spec-row"><span class="k">${k}</span><span class="v">${v || '<em style="color:var(--mut)">Not provided</em>'}</span></div>`
+  ).join('')
+}
+
+function scoreColor(s) { return s >= 80 ? 'var(--green)' : s >= 70 ? 'var(--amb)' : 'var(--red)' }
+
+function scoreSVG(score) {
+  const r = 62, c = 2 * Math.PI * r
+  const col = scoreColor(score)
+  const condition = score >= 80 ? 'Good condition' : score >= 70 ? 'Fair condition' : 'Needs attention'
+  return `
+    <div class="score-ring">
+      <svg viewBox="0 0 150 150" width="156" height="156">
+        <circle cx="75" cy="75" r="${r}" fill="none" stroke="#252e3b" stroke-width="12"/>
+        <circle cx="75" cy="75" r="${r}" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="${(c*score/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 75 75)"/>
+        <text x="75" y="82" text-anchor="middle" font-size="38" font-weight="800" fill="#f3f6fa">${score}</text>
+        <text x="75" y="102" text-anchor="middle" font-size="11" fill="#98a4b5">out of 100</text>
+      </svg>
+      <span class="h-score" style="color:${col}">${condition}</span>
+    </div>`
+}
+
+function renderReport() {
+  const r = state.report
+  if (!r) return
+  const { make, model, year } = r.vehicle
+  const title = [year, make, model].filter(Boolean).join(' ') || 'Vehicle report'
+  const pinLeft = Math.min(95, Math.max(5, 100 - r.score))
+  const infoRows = [
+    ['VIN', r.vin],
+    ['Brand', make],
+    ['Model', model],
+    ['Year', year],
+  ]
+
+  const photosHtml = r.photos.length
+    ? `<ul class="thumbs big">${r.photos.map(u => `<li><img src="${u}" alt="Vehicle photo"/></li>`).join('')}</ul>`
+    : ''
+
+  const damagesHtml = r.damages.length
+    ? r.damages.map(d => `
+        <div class="damage-row">
+          <div class="info"><strong>${d.part}</strong><span>${d.issue}</span></div>
+          ${chip(d.severity)}
+        </div>`).join('')
+    : `<p class="hint">No photos were uploaded — visual inspection unavailable. <a onclick="goTo('inspect')">Run a new inspection with photos.</a></p>`
+
+  document.getElementById('reportContent').innerHTML = `
+    <div class="rhead">
+      <div>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.4rem);margin-bottom:6px">${title}</h1>
+        <code>${r.vin}</code>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn ghost" onclick="goTo('inspect')">New inspection</button>
+        <button class="btn" onclick="window.print()">⬇ Download PDF</button>
+      </div>
+    </div>
+
+    <div class="demo-banner">⚠️ DEMO DATA — This report is generated from sample data. No government database or AI vision model is connected yet.</div>
+
+    <div class="cols2">
+      <div class="card center2">
+        <h3 style="margin-bottom:16px">Overall condition</h3>
+        ${scoreSVG(r.score)}
+      </div>
+      <div class="card">
+        <h3>Risk assessment &nbsp;${chip(r.risk)}</h3>
+        <div class="meter"><div class="meter-pin" style="left:${pinLeft}%"></div></div>
+        <p>${r.recs[0]}</p>
+      </div>
+      <div class="card">
+        <h3>Vehicle information</h3>
+        ${specRows(infoRows)}
+      </div>
+      <div class="card">
+        <h3>Specifications <small style="color:var(--mut);font-weight:400">(demo)</small></h3>
+        ${specRows(r.specs)}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3>Vehicle history <small style="color:var(--mut);font-weight:400">(demo)</small></h3>
+      ${specRows(r.history)}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3>Visual inspection <small style="color:var(--mut);font-weight:400">(demo results)</small></h3>
+      ${photosHtml}
+      ${damagesHtml}
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3>Recommendations for the buyer</h3>
+      <ul class="recs">${r.recs.slice(1).map(t => `<li>${t}</li>`).join('')}</ul>
+    </div>
+
+    <p style="color:var(--mut);font-size:.82rem;margin-top:20px;text-align:center">Report generated: ${r.generatedAt}</p>
+  `
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  createUploadZone('heroUpload')
+  createUploadZone('inspUpload')
+})
+</script>
+</body>
+</html>

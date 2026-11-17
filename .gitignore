@@ -1,0 +1,14 @@
+# Зависимости Node.js (очень тяжелые, каждый скачивает сам через npm install)
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Файлы с секретными API-ключами
+.env
+server/.env
+*.env
+
+# Системные файлы Windows и редактора
+.DS_Store
+Thumbs.db
+.vscode/
