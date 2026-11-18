@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>KolikCheck.AI — Know what you're buying.</title>
+<title>KolikCheck.AI — Көлік тексеру / Проверка авто</title>
 <style>
 :root{--bg:#0d1014;--card:#151a21;--line:#262e3a;--tx:#f3f6fa;--mut:#98a4b5;--blue:#2f7bff;--green:#2de0a5;--red:#ff5d6c;--amb:#ffb84d}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -24,12 +24,18 @@ nav.top .wrap{display:flex;align-items:center;justify-content:space-between;heig
 .logo{display:flex;gap:10px;align-items:center;font-weight:800;font-size:1.1rem;cursor:pointer}
 .logo-icon{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--green));display:grid;place-items:center;font-weight:900;color:#04121f;font-size:.9rem}
 .logo b{color:var(--green)}
-.nav-links{display:flex;gap:24px;align-items:center;color:var(--mut)}
+.nav-links{display:flex;gap:20px;align-items:center;color:var(--mut)}
 .nav-links a{cursor:pointer;transition:.15s}.nav-links a:hover{color:var(--tx)}
 .burger{display:none;background:none;border:0;color:var(--tx);font-size:1.5rem;cursor:pointer}
 .nav-mobile{display:none;flex-direction:column;gap:14px;padding:20px;border-top:1px solid var(--line);background:#0d1014f8}
 .nav-mobile.open{display:flex}
 .nav-mobile a{cursor:pointer;color:var(--mut)}.nav-mobile a:hover{color:var(--tx)}
+
+/* ── lang switcher ── */
+.lang-switch{display:flex;background:#10151c;border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.lang-btn{background:none;border:0;color:var(--mut);padding:4px 10px;font-size:.82rem;font-weight:700;border-radius:7px;cursor:pointer;transition:.15s}
+.lang-btn:hover{color:var(--tx)}
+.lang-btn.active{background:var(--blue);color:#fff}
 
 /* ── buttons ── */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;cursor:pointer;font-family:inherit;font-weight:600;font-size:1rem;padding:13px 22px;border-radius:12px;background:linear-gradient(135deg,var(--blue),#1a5fe0);color:#fff;box-shadow:0 6px 22px #2f7bff44;transition:transform .15s,box-shadow .15s}
@@ -81,7 +87,7 @@ input.invalid{border-color:var(--red)!important}
 @keyframes sp{to{transform:rotate(360deg)}}
 .bar{height:6px;background:#222b38;border-radius:9px;overflow:hidden;margin:16px 0}
 .bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .6s ease}
-.stages{list-style:none;text-align:left;max-width:300px;margin:0 auto}
+.stages{list-style:none;text-align:left;max-width:340px;margin:0 auto}
 .stages li{display:flex;gap:12px;align-items:center;padding:7px 0;color:var(--mut);font-size:.95rem}
 .stages .s-icon{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:.8rem;flex-shrink:0}
 .stages .now{color:var(--tx)}.stages .now .s-icon{border-color:var(--blue);color:var(--blue)}
@@ -122,6 +128,37 @@ footer strong{color:var(--tx)}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
+<style id="kolik-anim">
+/* ════════════════════════════════════════════════════════════════════════════════════
+   KolikCheck.AI — Beautiful JS Animations
+   ════════════════════════════════════════════════════════════════════════════════════ */
+@keyframes ka-fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes ka-slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+
+@keyframes ka-pulse{0%{box-shadow:0 0 0 0 rgba(47,123,255,0.6)}70%{box-shadow:0 0 0 16px rgba(47,123,255,0)}100%{box-shadow:0 0 0 0 rgba(47,123,255,0)}}
+@keyframes ka-spin{to{transform:rotate(360deg)}}
+@keyframes ka-bounceIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes ka-toastIn{from{opacity:0;transform:translateX(120%)}to{opacity:1;transform:translateX(0)}}
+@keyframes ka-toastOut{to{opacity:0;transform:translateX(120%)}}
+
+.ka-reveal{opacity:0;transform:translateY(34px);transition:opacity .75s ease,transform .75s ease}
+.ka-reveal.ka-revealed{opacity:1;transform:translateY(0)}
+.ka-stagger{opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .6s ease}
+.ka-stagger.ka-revealed{opacity:1;transform:translateY(0)}
+
+.ka-pulse{animation:ka-pulse 3s infinite}
+.ka-spin{animation:ka-spin 1s linear infinite}
+.ka-btn-loading{position:relative;color:transparent!important}
+.ka-btn-loading::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border:3px solid var(--line);border-top-color:#fff;border-radius:50%;animation:ka-spin .9s linear infinite}
+
+.page{animation:ka-bounceIn .55s ease both}
+
+.ka-toast{position:fixed;top:120px;right:18px;z-index:1000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.ka-toast-item{background:var(--card);border:1px solid var(--line);color:var(--tx);padding:12px 16px;border-radius:12px;box-shadow:0 16px 40px #000b;min-width:250px;animation:ka-toastIn .45s ease both;pointer-events:auto;display:flex;align-items:center;gap:10px;font-size:.95rem}
+.ka-toast-item.exit{animation:ka-toastOut .45s ease both forwards}
+
+@media(prefers-reduced-motion:reduce){.ka-reveal,.ka-stagger{opacity:1!important;transform:none!important;transition:none!important}.ka-pulse,.ka-spin,.page{animation:none!important}}
+</style>
 </head>
 <body>
 
@@ -133,17 +170,27 @@ footer strong{color:var(--tx)}
       <span>KolikCheck<b>.AI</b></span>
     </div>
     <div class="nav-links">
-      <a onclick="goTo('home');scrollTo(0,0)">Home</a>
-      <a onclick="goTo('home');setTimeout(()=>document.getElementById('features').scrollIntoView({behavior:'smooth'}),50)">Features</a>
-      <a onclick="goTo('home');setTimeout(()=>document.getElementById('how').scrollIntoView({behavior:'smooth'}),50)">How it works</a>
-      <a onclick="goTo('inspect')" class="btn sm">Inspect a car</a>
+      <a onclick="goTo('home');scrollTo(0,0)" data-i18n="navHome">Главная</a>
+      <a onclick="goTo('home');setTimeout(()=>document.getElementById('features').scrollIntoView({behavior:'smooth'}),50)" data-i18n="navFeatures">Возможности</a>
+      <a onclick="goTo('home');setTimeout(()=>document.getElementById('how').scrollIntoView({behavior:'smooth'}),50)" data-i18n="navHow">Как это работает</a>
+      <a onclick="goTo('inspect')" class="btn sm" data-i18n="navInspect">Проверить авто</a>
+      <div class="lang-switch">
+        <button class="lang-btn active" onclick="setLang('ru')">RU</button>
+        <button class="lang-btn" onclick="setLang('kz')">KZ</button>
+        <button class="lang-btn" onclick="setLang('en')">EN</button>
+      </div>
     </div>
     <button class="burger" onclick="toggleMobile()" aria-label="Menu">☰</button>
   </div>
   <div class="nav-mobile" id="navMobile">
-    <a onclick="goTo('home');toggleMobile()">Home</a>
-    <a onclick="goTo('inspect');toggleMobile()">Inspect a car</a>
-    <a onclick="goTo('report');toggleMobile()">Latest report</a>
+    <div class="lang-switch" style="align-self:flex-start;margin-bottom:8px">
+      <button class="lang-btn active" onclick="setLang('ru')">RU</button>
+      <button class="lang-btn" onclick="setLang('kz')">KZ</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+    <a onclick="goTo('home');toggleMobile()" data-i18n="navHome">Главная</a>
+    <a onclick="goTo('inspect');toggleMobile()" data-i18n="navInspect">Проверить авто</a>
+    <a onclick="goTo('report');toggleMobile()" data-i18n="navReport">Отчет</a>
   </div>
 </nav>
 
@@ -151,87 +198,87 @@ footer strong{color:var(--tx)}
 <div class="page active" id="page-home">
   <section class="hero wrap">
     <div>
-      <h1>Buy smarter.<br>Drive safer.</h1>
-      <p class="lead">KolikCheck.AI checks a used car's VIN and photos, then shows you its condition, hidden risks and what to ask the seller before you pay.</p>
-      <button class="btn" onclick="goTo('inspect')">Inspect a car →</button>
+      <h1 data-i18n="heroTitle">Покупай с умом.<br>Води уверенно.</h1>
+      <p class="lead" data-i18n="heroLead">KolikCheck.AI проверяет VIN-код и фотографии автомобиля, находит скрытые дефекты и риски еще до встречи с продавцом.</p>
+      <button class="btn" onclick="goTo('inspect')" data-i18n="heroCta">Проверить авто →</button>
     </div>
     <div class="card">
       <div class="field">
-        <label for="heroVin">Vehicle VIN</label>
-        <input type="text" id="heroVin" maxlength="20" placeholder="e.g. JTDKB20U093123456" oninput="this.value=this.value.toUpperCase()" />
+        <label for="heroVin" data-i18n="labelVin">VIN-код авто</label>
+        <input type="text" id="heroVin" maxlength="20" data-i18n-placeholder="vinPlaceholderHero" oninput="this.value=this.value.toUpperCase()" />
         <div class="err" id="heroVinErr" style="display:none"></div>
       </div>
       <div id="heroUpload"></div>
-      <button class="btn full" onclick="heroSubmit()">Analyze Vehicle</button>
-      <p class="hint">Need more options? <a onclick="goTo('inspect')">Use the full form</a></p>
+      <button class="btn full" onclick="heroSubmit()" data-i18n="btnAnalyze">Анализировать авто</button>
+      <p class="hint"><span data-i18n="hintMore">Нужны подробные параметры?</span> <a onclick="goTo('inspect')" data-i18n="hintFullForm">Открыть полную форму</a></p>
     </div>
   </section>
 
   <section class="sec wrap" id="features">
-    <h2>Everything you need before you pay</h2>
+    <h2 data-i18n="featHeading">Все, что нужно знать перед покупкой</h2>
     <div class="grid4">
-      <div class="card"><div class="ico">🔎</div><h3>VIN Decoder</h3><p>Read the make, model year and factory specifications encoded in the 17-character VIN.</p></div>
-      <div class="card"><div class="ico">📷</div><h3>AI Visual Inspection</h3><p>Upload photos and get visible damage flagged panel by panel before you meet the seller.</p></div>
-      <div class="card"><div class="ico">📋</div><h3>Vehicle History</h3><p>See registration, ownership history and incident records gathered in one place.</p></div>
-      <div class="card"><div class="ico">⚠️</div><h3>AI Risk Assessment</h3><p>Get a clear risk level and an overall condition score so you know exactly where you stand.</p></div>
+      <div class="card"><div class="ico">🔎</div><h3 data-i18n="feat1Title">VIN Декодер</h3><p data-i18n="feat1Desc">Марка, модель, год выпуска и заводские характеристики прямо из 17-значного VIN.</p></div>
+      <div class="card"><div class="ico">📷</div><h3 data-i18n="feat2Title">AI Осмотр кузова</h3><p data-i18n="feat2Desc">Загрузите фото — нейросеть выявит перекрасы, сколы, зазоры и дефекты деталей.</p></div>
+      <div class="card"><div class="ico">📋</div><h3 data-i18n="feat3Title">История и риски</h3><p data-i18n="feat3Desc">Комплексная оценка юридической чистоты и предыдущих инцидентов.</p></div>
+      <div class="card"><div class="ico">⚠️</div><h3 data-i18n="feat4Title">Оценка рисков AI</h3><p data-i18n="feat4Desc">Понятный индекс состояния и список конкретных рекомендаций перед сделкой.</p></div>
     </div>
   </section>
 
   <section class="sec wrap" id="how">
-    <h2>How it works</h2>
+    <h2 data-i18n="howHeading">Как это работает</h2>
     <div class="grid4" style="max-width:860px">
-      <div class="card"><div class="num">1</div><h3>Enter the VIN</h3><p>Type the 17-character VIN from the car or its documents.</p></div>
-      <div class="card"><div class="num">2</div><h3>Add photos</h3><p>Upload clear photos of the body, interior and engine bay.</p></div>
-      <div class="card"><div class="num">3</div><h3>Read your report</h3><p>Review the condition score, risks and what to check before buying.</p></div>
+      <div class="card"><div class="num">1</div><h3 data-i18n="how1Title">Введите VIN</h3><p data-i18n="how1Desc">Укажите 17-значный VIN-код автомобиля или техпаспорта.</p></div>
+      <div class="card"><div class="num">2</div><h3 data-i18n="how2Title">Добавьте фото</h3><p data-i18n="how2Desc">Прикрепите четкие фото кузова, салона или моторного отсека.</p></div>
+      <div class="card"><div class="num">3</div><h3 data-i18n="how3Title">Получите отчет</h3><p data-i18n="how3Desc">Изучите индекс состояния, скрытые повреждения и советы эксперта.</p></div>
     </div>
   </section>
 
-  <footer><strong>KolikCheck.AI</strong> — Know what you're buying. &nbsp;·&nbsp; Prototype, demo data only.</footer>
+  <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
 </div>
 
 <!-- ══ PAGE: INSPECT ══ -->
 <div class="page" id="page-inspect">
   <main class="wrap sec" style="max-width:660px">
-    <h1 style="font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:8px">Inspect a vehicle</h1>
-    <p class="lead" style="margin-bottom:28px">Enter the VIN and add photos. Brand, model and year are optional.</p>
+    <h1 style="font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:8px" data-i18n="inspHeading">Проверка автомобиля</h1>
+    <p class="lead" style="margin-bottom:28px" data-i18n="inspLead">Введите VIN и добавьте фотографии. Марка, модель и год опциональны.</p>
     <div class="card">
       <div class="field">
-        <label for="inspVin">VIN (required)</label>
-        <input type="text" id="inspVin" maxlength="20" placeholder="17 characters" oninput="this.value=this.value.toUpperCase()" />
+        <label for="inspVin" data-i18n="labelVinReq">VIN (обязательно)</label>
+        <input type="text" id="inspVin" maxlength="20" data-i18n-placeholder="vinPlaceholderInsp" oninput="this.value=this.value.toUpperCase()" />
         <div class="err" id="inspVinErr" style="display:none"></div>
       </div>
       <div class="row3">
-        <div class="field"><label for="inspMake">Brand</label><input type="text" id="inspMake" placeholder="Toyota" /></div>
-        <div class="field"><label for="inspModel">Model</label><input type="text" id="inspModel" placeholder="Camry" /></div>
+        <div class="field"><label for="inspMake" data-i18n="labelBrand">Марка</label><input type="text" id="inspMake" placeholder="Toyota" /></div>
+        <div class="field"><label for="inspModel" data-i18n="labelModel">Модель</label><input type="text" id="inspModel" placeholder="Camry" /></div>
         <div class="field">
-          <label for="inspYear">Year</label>
+          <label for="inspYear" data-i18n="labelYear">Год</label>
           <input type="number" id="inspYear" placeholder="2019" min="1980" max="2027" />
           <div class="err" id="inspYearErr" style="display:none"></div>
         </div>
       </div>
       <div class="field">
-        <label>Photos (optional — needed for visual inspection)</label>
+        <label data-i18n="labelPhotos">Фотографии (для компьютерного зрения AI)</label>
         <div id="inspUpload"></div>
       </div>
-      <button class="btn full" onclick="inspSubmit()">Analyze Vehicle</button>
+      <button class="btn full" onclick="inspSubmit()" data-i18n="btnAnalyze">Анализировать авто</button>
     </div>
   </main>
-  <footer><strong>KolikCheck.AI</strong> — Know what you're buying. &nbsp;·&nbsp; Prototype, demo data only.</footer>
+  <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
 </div>
 
 <!-- ══ PAGE: ANALYZING ══ -->
 <div class="page" id="page-analyzing">
   <div class="center">
-    <div class="card" style="width:100%;max-width:400px;text-align:center;padding:36px 28px" id="analyzingCard">
+    <div class="card" style="width:100%;max-width:420px;text-align:center;padding:36px 28px" id="analyzingCard">
       <div class="spin" id="analyzeSpin"></div>
-      <h2 id="analyzeTitle" style="margin-bottom:16px">Analyzing your vehicle</h2>
+      <h2 id="analyzeTitle" style="margin-bottom:16px" data-i18n="analyzingTitle">Анализ автомобиля...</h2>
       <div class="bar"><div class="bar-fill" id="analyzeBar" style="width:0%"></div></div>
       <ul class="stages" id="stageList"></ul>
       <div id="analyzeError" style="display:none;margin-top:16px">
         <div class="err" id="analyzeErrMsg" style="margin-bottom:16px;font-size:1rem"></div>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-          <button class="btn ghost" onclick="goTo('inspect')">Edit details</button>
-          <button class="btn" onclick="startAnalysis()">Try again</button>
+          <button class="btn ghost" onclick="goTo('inspect')" data-i18n="btnEdit">Изменить данные</button>
+          <button class="btn" onclick="startAnalysis()" data-i18n="btnRetry">Повторить</button>
         </div>
       </div>
     </div>
@@ -244,54 +291,307 @@ footer strong{color:var(--tx)}
     <div class="center" style="min-height:40vh">
       <div class="card" style="text-align:center;max-width:420px">
         <div style="font-size:2rem;margin-bottom:12px">📋</div>
-        <h2>No report yet</h2>
-        <p style="margin:8px 0 20px">Run an inspection and your report will appear here.</p>
-        <button class="btn" onclick="goTo('inspect')">Start an inspection</button>
+        <h2 data-i18n="noReportTitle">Отчетов пока нет</h2>
+        <p style="margin:8px 0 20px" data-i18n="noReportDesc">Запустите диагностику, и подробный отчет появится здесь.</p>
+        <button class="btn" onclick="goTo('inspect')" data-i18n="btnStartInsp">Начать проверку</button>
       </div>
     </div>
   </main>
-  <footer><strong>KolikCheck.AI</strong> — Know what you're buying. &nbsp;·&nbsp; Prototype, demo data only.</footer>
+  <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════
+// I18N DICTIONARIES (RU, KZ, EN)
+// ═══════════════════════════════════════════════
+const I18N = {
+  ru: {
+    navHome: "Главная",
+    navFeatures: "Возможности",
+    navHow: "Как это работает",
+    navInspect: "Проверить авто",
+    navReport: "Отчет",
+    heroTitle: "Покупай с умом.<br>Води уверенно.",
+    heroLead: "KolikCheck.AI проверяет VIN-код и фотографии автомобиля, находит скрытые дефекты и риски еще до встречи с продавцом.",
+    heroCta: "Проверить авто →",
+    labelVin: "VIN-код авто",
+    labelVinReq: "VIN (обязательно)",
+    labelBrand: "Марка",
+    labelModel: "Модель",
+    labelYear: "Год",
+    labelPhotos: "Фотографии (для компьютерного зрения AI)",
+    btnAnalyze: "Анализировать авто",
+    hintMore: "Нужны подробные параметры?",
+    hintFullForm: "Открыть полную форму",
+    featHeading: "Все, что нужно знать перед покупкой",
+    feat1Title: "VIN Декодер",
+    feat1Desc: "Марка, модель, год выпуска и заводские характеристики прямо из 17-значного VIN.",
+    feat2Title: "AI Осмотр кузова",
+    feat2Desc: "Загрузите фото — нейросеть выявит перекрасы, сколы, зазоры и дефекты деталей.",
+    feat3Title: "История и риски",
+    feat3Desc: "Комплексная оценка юридической чистоты и предыдущих инцидентов.",
+    feat4Title: "Оценка рисков AI",
+    feat4Desc: "Понятный индекс состояния и список конкретных рекомендаций перед сделкой.",
+    howHeading: "Как это работает",
+    how1Title: "Введите VIN",
+    how1Desc: "Укажите 17-значный VIN-код автомобиля или техпаспорта.",
+    how2Title: "Добавьте фото",
+    how2Desc: "Прикрепите четкие фото кузова, салона или моторного отсека.",
+    how3Title: "Получите отчет",
+    how3Desc: "Изучите индекс состояния, скрытые повреждения и советы эксперта.",
+    footerTagline: "Знай, что покупаешь.",
+    inspHeading: "Проверка автомобиля",
+    inspLead: "Введите VIN и добавьте фотографии. Марка, модель и год опциональны.",
+    analyzingTitle: "Анализ автомобиля...",
+    btnEdit: "Изменить данные",
+    btnRetry: "Повторить",
+    noReportTitle: "Отчетов пока нет",
+    noReportDesc: "Запустите диагностику, и подробный отчет появится здесь.",
+    btnStartInsp: "Начать проверку",
+    uploadTitle: "Добавьте фото автомобиля",
+    uploadSub: "Перетащите файлы или нажмите для выбора. JPG, PNG или WEBP, до 8 МБ.",
+    stages: [
+      "Проверка формата VIN",
+      "Декодирование и сбор характеристик",
+      "Компьютерное зрение и анализ кузова",
+      "Формирование итогового отчета"
+    ],
+    vinErrRequired: "Введите 17-значный VIN.",
+    vinErrLen: "VIN должен содержать 17 символов. Вы ввели: ",
+    vinErrChars: "VIN не может содержать буквы I, O или Q.",
+    yearErr: "Укажите корректный год выпуска.",
+    condGood: "Хорошее состояние",
+    condFair: "Удовлетворительное",
+    condBad: "Требует внимания",
+    outOf100: "из 100",
+    riskTitle: "Оценка рисков",
+    overallCond: "Общее состояние",
+    vehInfo: "Информация об автомобиле",
+    specsTitle: "Характеристики",
+    historyTitle: "История авто",
+    visualTitle: "Визуальный осмотр AI",
+    recsTitle: "Рекомендации для покупателя",
+    btnNewInsp: "Новая проверка",
+    btnPdf: "⬇ Скачать PDF",
+    noPhotosText: "Фото не загружены — визуальный осмотр недоступен.",
+    runWithPhotos: "Проверить авто с фото",
+    generatedAtText: "Отчет сформирован:",
+    demoBanner: "⚠️ ДЕМО-РЕЖИМ — Отчет построен на тестовых данных. Добавьте GEMINI_API_KEY на сервере для живого AI анализа.",
+    vinPlaceholderHero: "Например, JTDKB20U093123456",
+    vinPlaceholderInsp: "17 символов",
+    analyzeErrorTitle: "Анализ не удался / Ошибка",
+    serverConnErr: "Не удалось подключиться к серверу",
+    severities: { Low: "Низкий", Medium: "Средний", Moderate: "Средний", High: "Высокий" }
+  },
+  kz: {
+    navHome: "Басты бет",
+    navFeatures: "Мүмкіндіктер",
+    navHow: "Қалай жұмыс істейді",
+    navInspect: "Көлікті тексеру",
+    navReport: "Есеп",
+    heroTitle: "Ақылмен таңда.<br>Сеніммен айда.",
+    heroLead: "KolikCheck.AI көліктің VIN-коды мен фотосуреттерін тексеріп, жасырын ақаулар мен қауіптерді сатушымен кездесуге дейін анықтайды.",
+    heroCta: "Көлікті тексеру →",
+    labelVin: "Көліктің VIN-коды",
+    labelVinReq: "VIN (міндетті)",
+    labelBrand: "Маркасы",
+    labelModel: "Моделі",
+    labelYear: "Жылы",
+    labelPhotos: "Фотосуреттер (AI визуалды талдауы үшін)",
+    btnAnalyze: "Көлікті талдау",
+    hintMore: "Қосымша параметрлер керек пе?",
+    hintFullForm: "Толық пішінді ашу",
+    featHeading: "Сатып алмас бұрын білуіңіз керек барлық ақпарат",
+    feat1Title: "VIN Декодер",
+    feat1Desc: "17 таңбалы VIN арқылы шыққан жылы, маркасы және зауыттық сипаттамалары.",
+    feat2Title: "AI Шанақты тексеру",
+    feat2Desc: "Фото жүктеңіз — жасанды интеллект сырылған, боялған және зақымдалған жерлерін табады.",
+    feat3Title: "Тарихы мен қауіптер",
+    feat3Desc: "Тіркеу тарихы мен бұрынғы оқиғаларды кешенді бағалау.",
+    feat4Title: "AI Қауіп деңгейі",
+    feat4Desc: "Көліктің жалпы жағдайының нақты индексі және сатып алушыға кеңестер.",
+    howHeading: "Қалай жұмыс істейді",
+    how1Title: "VIN енгізіңіз",
+    how1Desc: "Көліктің немесе құжаттың 17 таңбалы VIN-кодын жазыңыз.",
+    how2Title: "Фото қосыңыз",
+    how2Desc: "Шанақтың, салонның немесе қозғалтқыштың сапалы суреттерін жүктеңіз.",
+    how3Title: "Есеп алыңыз",
+    how3Desc: "Жағдай бағасын, жасырын кемшіліктер мен сарапшы ұсыныстарын көріңіз.",
+    footerTagline: "Не сатып алып жатқаныңызды біліңіз.",
+    inspHeading: "Көлікті тексеру",
+    inspLead: "VIN енгізіп, фотосуреттерді қосыңыз. Маркасы, моделі және жылы қосымша.",
+    analyzingTitle: "Көлік талдануда...",
+    btnEdit: "Деректерді өзгерту",
+    btnRetry: "Қайта көру",
+    noReportTitle: "Әзірге есеп жоқ",
+    noReportDesc: "Тексеруді бастаңыз, сонда есеп осы жерде көрсетіледі.",
+    btnStartInsp: "Тексеруді бастау",
+    uploadTitle: "Көлік суреттерін жүктеңіз",
+    uploadSub: "Файлдарды сүйреп тастаңыз немесе таңдаңыз. JPG, PNG немесе WEBP, 8 МБ дейін.",
+    stages: [
+      "VIN пішімін тексеру",
+      "Сипаттамаларды жинақтау",
+      "Компьютерлік көру арқылы шанақты зерттеу",
+      "Қорытынды есеп дайындау"
+    ],
+    vinErrRequired: "17 таңбалы VIN енгізіңіз.",
+    vinErrLen: "VIN 17 таңбадан тұруы керек. Сіз енгіздіңіз: ",
+    vinErrChars: "VIN құрамында I, O немесе Q әріптері болмауы тиіс.",
+    yearErr: "Дұрыс шыққан жылын көрсетіңіз.",
+    condGood: "Жақсы жағдайда",
+    condFair: "Орташа жағдайда",
+    condBad: "Назар аударуды талап етеді",
+    outOf100: "/ 100",
+    riskTitle: "Қауіп деңгейі",
+    overallCond: "Жалпы жағдайы",
+    vehInfo: "Көлік туралы мәлімет",
+    specsTitle: "Техникалық сипаттамалар",
+    historyTitle: "Көлік тарихы",
+    visualTitle: "AI Визуалды бақылау",
+    recsTitle: "Сатып алушыға кеңестер",
+    btnNewInsp: "Жаңа тексеру",
+    btnPdf: "⬇ PDF жүктеп алу",
+    noPhotosText: "Суреттер жүктелмеді — визуалды тексеру қолжетімсіз.",
+    runWithPhotos: "Суреттермен қайта тексеру",
+    generatedAtText: "Есеп дайындалды:",
+    demoBanner: "⚠️ ДЕМО-РЕЖИМ — Бұл есеп демо-деректерден құралған. AI талдау үшін серверге GEMINI_API_KEY орнатыңыз.",
+    vinPlaceholderHero: "Misal, JTDKB20U093123456",
+    vinPlaceholderInsp: "17 таңба",
+    analyzeErrorTitle: "Талдау сәтсіз аяқталды / Қате",
+    serverConnErr: "Серверге қосылу мүмкін болмады",
+    severities: { Low: "Төмен", Medium: "Орташа", Moderate: "Орташа", High: "Жоғары" }
+  },
+  en: {
+    navHome: "Home",
+    navFeatures: "Features",
+    navHow: "How it works",
+    navInspect: "Inspect a car",
+    navReport: "Latest report",
+    heroTitle: "Buy smarter.<br>Drive safer.",
+    heroLead: "KolikCheck.AI checks a used car's VIN and photos, then shows you its condition, hidden risks and what to ask the seller before you pay.",
+    heroCta: "Inspect a car →",
+    labelVin: "Vehicle VIN",
+    labelVinReq: "VIN (required)",
+    labelBrand: "Brand",
+    labelModel: "Model",
+    labelYear: "Year",
+    labelPhotos: "Photos (optional — needed for visual inspection)",
+    btnAnalyze: "Analyze Vehicle",
+    hintMore: "Need more options?",
+    hintFullForm: "Use the full form",
+    featHeading: "Everything you need before you pay",
+    feat1Title: "VIN Decoder",
+    feat1Desc: "Read the make, model year and factory specifications encoded in the 17-character VIN.",
+    feat2Title: "AI Visual Inspection",
+    feat2Desc: "Upload photos and get visible damage flagged panel by panel before you meet the seller.",
+    feat3Title: "Vehicle History",
+    feat3Desc: "See registration, ownership history and incident records gathered in one place.",
+    feat4Title: "AI Risk Assessment",
+    feat4Desc: "Get a clear risk level and an overall condition score so you know exactly where you stand.",
+    howHeading: "How it works",
+    how1Title: "Enter the VIN",
+    how1Desc: "Type the 17-character VIN from the car or its documents.",
+    how2Title: "Add photos",
+    how2Desc: "Upload clear photos of the body, interior and engine bay.",
+    how3Title: "Read your report",
+    how3Desc: "Review the condition score, risks and what to check before buying.",
+    footerTagline: "Know what you're buying.",
+    inspHeading: "Inspect a vehicle",
+    inspLead: "Enter the VIN and add photos. Brand, model and year are optional.",
+    analyzingTitle: "Analyzing your vehicle",
+    btnEdit: "Edit details",
+    btnRetry: "Try again",
+    noReportTitle: "No report yet",
+    noReportDesc: "Run an inspection and your report will appear here.",
+    btnStartInsp: "Start an inspection",
+    uploadTitle: "Add car photos",
+    uploadSub: "Drag & drop or click to choose. JPG, PNG or WEBP, max 8 MB each.",
+    stages: [
+      "Validating VIN",
+      "Processing vehicle information",
+      "Analyzing uploaded images",
+      "Preparing vehicle report"
+    ],
+    vinErrRequired: "Enter the 17-character VIN.",
+    vinErrLen: "A VIN has 17 characters. You entered: ",
+    vinErrChars: "A VIN never contains the letters I, O or Q.",
+    yearErr: "Enter a valid year of manufacture.",
+    condGood: "Good condition",
+    condFair: "Fair condition",
+    condBad: "Needs attention",
+    outOf100: "out of 100",
+    riskTitle: "Risk assessment",
+    overallCond: "Overall condition",
+    vehInfo: "Vehicle information",
+    specsTitle: "Specifications",
+    historyTitle: "Vehicle history",
+    visualTitle: "Visual inspection",
+    recsTitle: "Recommendations for the buyer",
+    btnNewInsp: "New inspection",
+    btnPdf: "⬇ Download PDF",
+    noPhotosText: "No photos were uploaded — visual inspection unavailable.",
+    runWithPhotos: "Run a new inspection with photos.",
+    generatedAtText: "Report generated:",
+    demoBanner: "⚠️ DEMO DATA — This report uses sample data. Set GEMINI_API_KEY on the server to enable real AI analysis.",
+    vinPlaceholderHero: "e.g. JTDKB20U093123456",
+    vinPlaceholderInsp: "17 characters",
+    analyzeErrorTitle: "Analysis failed / Error",
+    serverConnErr: "Could not connect to server",
+    severities: { Low: "Low", Medium: "Medium", Moderate: "Medium", High: "High" }
+  }
+}
+
+let currentLang = 'ru';
+
+function t(key) {
+  return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.ru[key]) || key;
+}
+
+function setLang(lang) {
+  if (!I18N[lang]) return;
+  currentLang = lang;
+  document.documentElement.lang = lang;
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === lang);
+  });
+
+  // Update static elements with data-i18n
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[currentLang][key]) {
+      el.innerHTML = I18N[currentLang][key];
+    }
+  });
+
+  // Update placeholders with data-i18n-placeholder
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (I18N[currentLang][key]) {
+      el.placeholder = I18N[currentLang][key];
+    }
+  });
+
+  // Refresh upload zones titles
+  ['heroUpload', 'inspUpload'].forEach(cid => {
+    const drop = document.getElementById(cid + '-drop');
+    if (drop) {
+      const strong = drop.querySelector('strong');
+      const p = drop.querySelector('p');
+      if (strong) strong.textContent = t('uploadTitle');
+      if (p) p.textContent = t('uploadSub');
+    }
+  });
+
+  if (state.report) {
+    renderReport();
+  }
+}
+
+// ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
 const state = { draft: null, report: null }
-
-// ═══════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════
-const DEMO_SPECS = [
-  ['Engine','2.5 L, 4-cylinder petrol'],
-  ['Transmission','8-speed automatic'],
-  ['Drivetrain','All-wheel drive'],
-  ['Body type','Sedan'],
-  ['Estimated mileage','87,000 km'],
-]
-const DEMO_DAMAGES = [
-  { part:'Front bumper', issue:'Light scratches and paint chips', severity:'Low' },
-  { part:'Rear left door', issue:'Paint tone differs from nearby panels — possible repaint', severity:'Medium' },
-  { part:'Windshield', issue:'Small chip, lower right corner', severity:'Low' },
-]
-const DEMO_HISTORY = [
-  ['Registration','Kazakhstan, 2 previous owners'],
-  ['Theft / wanted check','No record found'],
-  ['Reported accidents','1 minor incident (2021)'],
-]
-const DEMO_RECS = [
-  'Ask the seller for service records and compare the mileage.',
-  'Have a mechanic inspect the rear left door for body filler or repaint.',
-  'Take a test drive and listen for noise from the engine and gearbox.',
-  'Confirm the VIN plate on the car matches the VIN on the documents.',
-]
-const RISK_ADVICE = {
-  Low:'Overall risk is low. Confirm the details below in person before paying.',
-  Moderate:'Risk is moderate. Negotiate the price and inspect the flagged areas before you buy.',
-  High:'Risk is high. Do not pay a deposit until a qualified mechanic has inspected the car.',
-}
-const VIN_MAKES = { JT:'Toyota', JHM:'Honda', KM:'Hyundai', KN:'Kia', WVW:'Volkswagen', WBA:'BMW', WDD:'Mercedes-Benz', WAU:'Audi', XTA:'Lada', '5YJ':'Tesla' }
-const YEAR_CODES = 'ABCDEFGHJKLMNPRSTVWXY123456789'
 
 // ═══════════════════════════════════════════════
 // NAVIGATION
@@ -321,8 +621,8 @@ function createUploadZone(containerId) {
   function render() {
     const html = `
       <div class="drop" id="${containerId}-drop">
-        <strong>Add car photos</strong>
-        <p>Drag & drop or click to choose. JPG, PNG or WEBP, max 8 MB each.</p>
+        <strong>${t('uploadTitle')}</strong>
+        <p>${t('uploadSub')}</p>
         <input type="file" id="${containerId}-input" hidden multiple accept="image/jpeg,image/png,image/webp"/>
       </div>
       <div id="${containerId}-errbox" class="err" style="display:none;margin-top:6px"></div>
@@ -354,9 +654,9 @@ function createUploadZone(containerId) {
     const problems = []
     const store = photoStores[cid]
     Array.from(files).forEach(f => {
-      if (!['image/jpeg','image/png','image/webp'].includes(f.type)) { problems.push(`${f.name}: use JPG, PNG or WEBP.`); return }
-      if (f.size > 8 * 1024 * 1024) { problems.push(`${f.name}: larger than 8 MB.`); return }
-      if (store.length >= 10) { problems.push('You can add up to 10 photos.'); return }
+      if (!['image/jpeg','image/png','image/webp'].includes(f.type)) { problems.push(`${f.name}: JPG, PNG, WEBP`); return }
+      if (f.size > 8 * 1024 * 1024) { problems.push(`${f.name} > 8 MB`); return }
+      if (store.length >= 10) { problems.push('Max 10 photos'); return }
       const id = cid + '-' + Date.now() + '-' + Math.random()
       store.push({ id, file: f, url: URL.createObjectURL(f) })
     })
@@ -399,9 +699,9 @@ function normalizeVin(v) { return v.toUpperCase().replace(/[^A-Z0-9]/g,'') }
 
 function validateVin(v) {
   const vin = normalizeVin(v)
-  if (!vin) return 'Enter the 17-character VIN.'
-  if (vin.length !== 17) return `A VIN has 17 characters. You entered ${vin.length}.`
-  if (/[IOQ]/.test(vin)) return 'A VIN never contains the letters I, O or Q.'
+  if (!vin) return t('vinErrRequired')
+  if (vin.length !== 17) return t('vinErrLen') + vin.length
+  if (/[IOQ]/.test(vin)) return t('vinErrChars')
   return ''
 }
 
@@ -409,7 +709,7 @@ function validateYear(v) {
   if (!v) return ''
   const y = Number(v)
   const max = new Date().getFullYear() + 1
-  return (Number.isInteger(y) && y >= 1980 && y <= max) ? '' : `Enter a year from 1980 to ${max}.`
+  return (Number.isInteger(y) && y >= 1980 && y <= max) ? '' : t('yearErr')
 }
 
 function showErr(id, msg) {
@@ -451,31 +751,18 @@ function inspSubmit() {
 }
 
 // ═══════════════════════════════════════════════
-// ANALYSIS (SIMULATED)
+// ANALYSIS (WITH SERVER API)
 // ═══════════════════════════════════════════════
-const STAGES = [
-  'Validating VIN',
-  'Processing vehicle information',
-  'Analyzing uploaded images',
-  'Preparing vehicle report',
-]
-
 function delay(ms) { return new Promise(r => setTimeout(r, ms)) }
 
 function renderStages(current) {
   const ul = document.getElementById('stageList')
-  ul.innerHTML = STAGES.map((s, i) => {
+  const stages = t('stages')
+  ul.innerHTML = stages.map((s, i) => {
     const cls = i < current ? 'done' : i === current ? 'now' : ''
     const icon = i < current ? '✓' : i === current ? '→' : ''
     return `<li class="${cls}"><span class="s-icon">${icon}</span>${s}</li>`
   }).join('')
-}
-
-function decodeVin(vin) {
-  const make = VIN_MAKES[vin.slice(0,3)] || VIN_MAKES[vin.slice(0,2)] || ''
-  const i = YEAR_CODES.indexOf(vin[9])
-  const year = i < 0 ? '' : (i < 21 ? 2010 + i : 2001 + (i - 21)).toString()
-  return { make, year }
 }
 
 async function startAnalysis() {
@@ -484,61 +771,56 @@ async function startAnalysis() {
 
   // reset UI
   document.getElementById('analyzeSpin').style.display = 'block'
-  document.getElementById('analyzeTitle').textContent = 'Analyzing your vehicle'
+  document.getElementById('analyzeTitle').textContent = t('analyzingTitle')
   document.getElementById('analyzeBar').style.width = '0%'
   document.getElementById('analyzeError').style.display = 'none'
 
   try {
-    // stage 0
+    const fd = new FormData()
+    fd.append('vin', draft.vin)
+    if (draft.make) fd.append('make', draft.make)
+    if (draft.model) fd.append('model', draft.model)
+    if (draft.year) fd.append('year', draft.year)
+    draft.photos.forEach(p => fd.append('photos', p.file))
+
+    // Stage 0
     renderStages(0)
-    document.getElementById('analyzeBar').style.width = '10%'
-    await delay(800)
-    const vinMsg = validateVin(draft.vin)
-    if (vinMsg) throw new Error(vinMsg)
+    document.getElementById('analyzeBar').style.width = '15%'
 
-    // stage 1
+    const fetchPromise = fetch('/api/analyze', { method: 'POST', body: fd })
+
+    await delay(600)
     renderStages(1)
-    document.getElementById('analyzeBar').style.width = '35%'
-    await delay(900)
-    const decoded = decodeVin(draft.vin)
+    document.getElementById('analyzeBar').style.width = '40%'
 
-    // stage 2
+    await delay(600)
     renderStages(2)
-    document.getElementById('analyzeBar').style.width = '65%'
-    await delay(1000)
-    const hasPhotos = draft.photos && draft.photos.length > 0
-    const damages = hasPhotos ? DEMO_DAMAGES : []
+    document.getElementById('analyzeBar').style.width = '70%'
 
-    // stage 3
+    const response = await fetchPromise
+
     renderStages(3)
     document.getElementById('analyzeBar').style.width = '90%'
-    await delay(700)
 
-    // build report
-    const seed = [...draft.vin].reduce((s, c) => s + c.charCodeAt(0), 0)
-    const score = 60 + (seed % 31)
-    const risk = score >= 80 ? 'Low' : score >= 70 ? 'Moderate' : 'High'
-    state.report = {
-      vin: draft.vin,
-      vehicle: { make: draft.make || decoded.make, model: draft.model, year: draft.year || decoded.year },
-      specs: DEMO_SPECS,
-      history: DEMO_HISTORY,
-      score, risk, damages,
-      photos: draft.photos.map(p => p.url),
-      recs: [RISK_ADVICE[risk], ...DEMO_RECS],
-      generatedAt: new Date().toLocaleString(),
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data.error || `Server error (${response.status})`)
     }
 
+    const report = await response.json()
+    report.photos = draft.photos.map(p => p.url)
+    state.report = report
+
     document.getElementById('analyzeBar').style.width = '100%'
-    renderStages(STAGES.length)
+    renderStages(4)
     await delay(400)
     renderReport()
     goTo('report')
 
   } catch(err) {
     document.getElementById('analyzeSpin').style.display = 'none'
-    document.getElementById('analyzeTitle').textContent = 'Analysis stopped'
-    document.getElementById('analyzeErrMsg').textContent = err.message
+    document.getElementById('analyzeTitle').textContent = t('analyzeErrorTitle');
+    document.getElementById('analyzeErrMsg').textContent = err.message || t('serverConnErr')
     document.getElementById('analyzeError').style.display = 'block'
   }
 }
@@ -547,12 +829,13 @@ async function startAnalysis() {
 // REPORT RENDER
 // ═══════════════════════════════════════════════
 function chip(severity) {
-  return `<span class="chip ${severity}">${severity}</span>`
+  const label = (I18N[currentLang].severities && I18N[currentLang].severities[severity]) || severity
+  return `<span class="chip ${severity}">${label}</span>`
 }
 
 function specRows(rows) {
   return rows.map(([k,v]) =>
-    `<div class="spec-row"><span class="k">${k}</span><span class="v">${v || '<em style="color:var(--mut)">Not provided</em>'}</span></div>`
+    `<div class="spec-row"><span class="k">${k}</span><span class="v">${v || '<em style="color:var(--mut)">—</em>'}</span></div>`
   ).join('')
 }
 
@@ -561,7 +844,7 @@ function scoreColor(s) { return s >= 80 ? 'var(--green)' : s >= 70 ? 'var(--amb)
 function scoreSVG(score) {
   const r = 62, c = 2 * Math.PI * r
   const col = scoreColor(score)
-  const condition = score >= 80 ? 'Good condition' : score >= 70 ? 'Fair condition' : 'Needs attention'
+  const condition = score >= 80 ? t('condGood') : score >= 70 ? t('condFair') : t('condBad')
   return `
     <div class="score-ring">
       <svg viewBox="0 0 150 150" width="156" height="156">
@@ -569,7 +852,7 @@ function scoreSVG(score) {
         <circle cx="75" cy="75" r="${r}" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round"
           stroke-dasharray="${(c*score/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 75 75)"/>
         <text x="75" y="82" text-anchor="middle" font-size="38" font-weight="800" fill="#f3f6fa">${score}</text>
-        <text x="75" y="102" text-anchor="middle" font-size="11" fill="#98a4b5">out of 100</text>
+        <text x="75" y="102" text-anchor="middle" font-size="11" fill="#98a4b5">${t('outOf100')}</text>
       </svg>
       <span class="h-score" style="color:${col}">${condition}</span>
     </div>`
@@ -579,13 +862,13 @@ function renderReport() {
   const r = state.report
   if (!r) return
   const { make, model, year } = r.vehicle
-  const title = [year, make, model].filter(Boolean).join(' ') || 'Vehicle report'
+  const title = [year, make, model].filter(Boolean).join(' ') || t('vehInfo')
   const pinLeft = Math.min(95, Math.max(5, 100 - r.score))
   const infoRows = [
     ['VIN', r.vin],
-    ['Brand', make],
-    ['Model', model],
-    ['Year', year],
+    [t('labelBrand'), make],
+    [t('labelModel'), model],
+    [t('labelYear'), year],
   ]
 
   const photosHtml = r.photos.length
@@ -598,7 +881,7 @@ function renderReport() {
           <div class="info"><strong>${d.part}</strong><span>${d.issue}</span></div>
           ${chip(d.severity)}
         </div>`).join('')
-    : `<p class="hint">No photos were uploaded — visual inspection unavailable. <a onclick="goTo('inspect')">Run a new inspection with photos.</a></p>`
+    : `<p class="hint">${t('noPhotosText')} <a onclick="goTo('inspect')">${t('runWithPhotos')}</a></p>`
 
   document.getElementById('reportContent').innerHTML = `
     <div class="rhead">
@@ -607,60 +890,121 @@ function renderReport() {
         <code>${r.vin}</code>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn ghost" onclick="goTo('inspect')">New inspection</button>
-        <button class="btn" onclick="window.print()">⬇ Download PDF</button>
+        <button class="btn ghost" onclick="goTo('inspect')">${t('btnNewInsp')}</button>
+        <button class="btn" onclick="window.print()">${t('btnPdf')}</button>
       </div>
     </div>
 
-    <div class="demo-banner">⚠️ DEMO DATA — This report is generated from sample data. No government database or AI vision model is connected yet.</div>
+    ${r.isDemo ? `<div class="demo-banner">${t('demoBanner')}</div>` : ''}
 
     <div class="cols2">
       <div class="card center2">
-        <h3 style="margin-bottom:16px">Overall condition</h3>
+        <h3 style="margin-bottom:16px">${t('overallCond')}</h3>
         ${scoreSVG(r.score)}
       </div>
       <div class="card">
-        <h3>Risk assessment &nbsp;${chip(r.risk)}</h3>
+        <h3>${t('riskTitle')} &nbsp;${chip(r.risk)}</h3>
         <div class="meter"><div class="meter-pin" style="left:${pinLeft}%"></div></div>
         <p>${r.recs[0]}</p>
       </div>
       <div class="card">
-        <h3>Vehicle information</h3>
+        <h3>${t('vehInfo')}</h3>
         ${specRows(infoRows)}
       </div>
       <div class="card">
-        <h3>Specifications <small style="color:var(--mut);font-weight:400">(demo)</small></h3>
+        <h3>${t('specsTitle')}</h3>
         ${specRows(r.specs)}
       </div>
     </div>
 
     <div class="card" style="margin-top:18px">
-      <h3>Vehicle history <small style="color:var(--mut);font-weight:400">(demo)</small></h3>
+      <h3>${t('historyTitle')}</h3>
       ${specRows(r.history)}
     </div>
 
     <div class="card" style="margin-top:18px">
-      <h3>Visual inspection <small style="color:var(--mut);font-weight:400">(demo results)</small></h3>
+      <h3>${t('visualTitle')}</h3>
       ${photosHtml}
       ${damagesHtml}
     </div>
 
     <div class="card" style="margin-top:18px">
-      <h3>Recommendations for the buyer</h3>
+      <h3>${t('recsTitle')}</h3>
       <ul class="recs">${r.recs.slice(1).map(t => `<li>${t}</li>`).join('')}</ul>
     </div>
 
-    <p style="color:var(--mut);font-size:.82rem;margin-top:20px;text-align:center">Report generated: ${r.generatedAt}</p>
+    <p style="color:var(--mut);font-size:.82rem;margin-top:20px;text-align:center">${t('generatedAtText')} ${r.generatedAt}</p>
   `
 }
 
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// KolikCheck.AI — Beautiful JS Animations (scroll reveal, float, toast, btn-loading)
+// ══════════════════════════════════════════════════════════
+(function(){
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function applyReveal(){
+    document.querySelectorAll('.hero h1,.hero .lead,.hero .btn,.card,.damage-row,.thumb,.recs li').forEach(function(el,i){
+      if(el.classList.contains('ka-stagger')||el.classList.contains('ka-reveal')) return;
+      el.classList.add('ka-stagger');
+      el.style.transitionDelay = (i % 8) * 0.10 + 's';
+    });
+  }
+
+  function initReveal(){
+    if(reduced){
+      document.querySelectorAll('.ka-stagger,.ka-reveal').forEach(function(el){el.classList.add('ka-revealed');el.style.opacity=1;el.style.transform='none';});
+      return;
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){entry.target.classList.add('ka-revealed');io.unobserve(entry.target);}
+      });
+    },{threshold:0.10,rootMargin:'0px 0px -70px 0px'});
+    document.querySelectorAll('.ka-stagger,.ka-reveal').forEach(function(el){io.observe(el);});
+  }
+
+  window.kaToast = function(msg,type){
+    var c=document.getElementById('kaToastContainer');
+    if(!c){c=document.createElement('div');c.id='kaToastContainer';c.className='ka-toast';document.body.appendChild(c);}
+    var item=document.createElement('div');item.className='ka-toast-item';
+    var icon = {success:'\u2705',error:'\u274C'}[type] || '\u2139\uFE0F';
+    item.innerHTML = '<span style="font-size:1.25rem">'+icon+'</span><span>'+msg+'</span>';
+    c.appendChild(item);
+    setTimeout(function(){item.classList.add('exit');setTimeout(function(){item.remove();},400);},3000);
+  };
+
+  window.kaBtnLoading = function(btn,loading){
+    if(!btn)return;
+    if(loading){btn.classList.add('ka-btn-loading');btn.disabled=true;}
+    else{btn.classList.remove('ka-btn-loading');btn.disabled=false;}
+  };
+
+  window.kaAnimateScore = function(el,to){
+    if(!el)return;
+    if(reduced){el.textContent=to;return;}
+    var from=parseInt(el.textContent)||0,dur=900,start=performance.now();
+    function frame(now){
+      var t=Math.min(1,(now-start)/dur);
+      el.textContent=Math.round(from+(to-from)*t);
+      if(t<1)requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  };
+
+  function init(){applyReveal();initReveal();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
   createUploadZone('heroUpload')
   createUploadZone('inspUpload')
+  setLang('ru')
 })
 </script>
 </body>
 </html>
+

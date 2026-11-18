@@ -1,5 +1,11 @@
 {
-  "dependencies": {
-    "@google/genai": "^3.4.0"
+  "name": "kolikcheck-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KolikCheck.AI — Smart vehicle inspection platform powered by Gemini AI",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "install:server": "cd server && npm install"
   }
 }
