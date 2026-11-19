@@ -1,0 +1,21 @@
+# Зависимости Node.js
+node_modules/
+server/node_modules/
+
+# Файлы с секретными API-ключами (не попадают в образ)
+.env
+server/.env
+*.env
+
+# Git
+.git
+.gitignore
+
+# Системные файлы Windows и редактора
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Логи
+*.log
+npm-debug.log*

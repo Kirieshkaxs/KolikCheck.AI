@@ -23,7 +23,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 // ── express setup ──
 const app  = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(express.json());
@@ -344,7 +344,7 @@ app.get('*', (_req, res) => {
 });
 
 // ── Start ──
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   const live = isKeyConfigured();
   console.log(`
 🚗 KolikCheck.AI server running at http://localhost:${PORT}
