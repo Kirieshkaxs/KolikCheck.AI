@@ -800,22 +800,31 @@ function heroSubmit() {
 
 function inspSubmit() {
   const vin = document.getElementById('inspVin').value
-  const year = document.getElementById('inspYear').value
+  const yearInput = document.getElementById('inspYear').value
+  const makeInput = document.getElementById('inspMake').value.trim()
+  const modelInput = document.getElementById('inspModel').value.trim()
   const vinMsg = validateVin(vin)
-  const yearMsg = validateYear(year)
+  const yearMsg = validateYear(yearInput)
   showErr('inspVinErr', vinMsg)
   showErr('inspYearErr', yearMsg)
   if (vinMsg || yearMsg) return
   state.draft = {
     vin: normalizeVin(vin),
-    make: document.getElementById('inspMake').value.trim(),
-    model: document.getElementById('inspModel').value.trim(),
-    year: year,
+    ...(makeInput ? { make: makeInput } : {}),
+    ...(modelInput ? { model: modelInput } : {}),
+    ...(yearInput ? { year: yearInput } : {}),
     photos: photoStores['inspUpload'] || []
   }
   goTo('analyzing')
   startAnalysis()
 }
+
+// Очистить ручные поля марка/модель/год при изменении VIN, чтобы не перебивали декодер
+document.getElementById('inspVin')?.addEventListener('input', () => {
+  document.getElementById('inspMake').value = ''
+  document.getElementById('inspModel').value = ''
+  document.getElementById('inspYear').value = ''
+})
 
 // ═══════════════════════════════════════════════
 // ANALYSIS (WITH SERVER API)
