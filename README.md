@@ -25,7 +25,7 @@ Purchasing a used car on the secondary market in Kazakhstan (over 1M+ transactio
                 ▼
 [ Server — Node.js + Express ]
         ├──► Gemini API (AI Photo Defects & OBD-II DTC Parsing)
-        ├──► Built-in VIN Decoder (make, year from 17-char VIN)
+        ├──► VIN Decoder via API (make, year from 17-char VIN; built-in fallback)
         └──► Demo Fallback (when API key is not set)
                 │
                 ▼
@@ -57,6 +57,7 @@ npm install
 #    Copy .env.example → .env and paste your key
 cp ../.env.example .env
 #    Edit .env → GEMINI_API_KEY=your_actual_key
+#    Edit .env → VIN_DECODE_API_KEY=your_vin_decode_api_key  (optional; enables API-based VIN decoding)
 
 # 4. Start the server
 npm start
@@ -64,6 +65,7 @@ npm start
 ```
 
 > **Demo mode:** If `GEMINI_API_KEY` is not set, the server runs with sample data so you can explore the UI without an API key.
+> VIN decoding uses the external API when `VIN_DECODE_API_KEY` is set; otherwise it falls back to the built-in WMI/year tables.
 
 ---
 

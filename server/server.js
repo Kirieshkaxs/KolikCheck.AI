@@ -13,6 +13,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
+import { decodeVin as decodeVinService, validateVin as validateVinService } from './vin-decoder.js';
 
 // ── paths ──
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +21,18 @@ const __dirname  = path.dirname(__filename);
 
 // Load .env from the server/ folder regardless of CWD
 dotenv.config({ path: path.join(__dirname, '.env') });
+
+// ═════════════════════════════════════════════════════════════════
+//  VIN DECODE API (external, requires API key)
+//  Set VIN_DECODE_API_KEY and optionally VIN_DECODE_API_BASE_URL in server/.env
+// ═════════════════════════════════════════════════════════════════
+const VIN_DECODE_API_KEY  = process.env.VIN_DECODE_API_KEY;
+const VIN_DECODE_API_BASE = process.env.VIN_DECODE_API_BASE_URL || 'https://api.example.com/v1/vin';
+const AUTODEV_API_KEY     = process.env.AUTODEV_API_KEY;
+
+function isVinApiConfigured() {
+  return !!(VIN_DECODE_API_KEY && VIN_DECODE_API_BASE);
+}
 
 // ── express setup ──
 const app  = express();
@@ -45,7 +58,7 @@ const upload = multer({
 // ═══════════════════════════════════════════════
 const VIN_MAKES_3 = {
   JT: 'Toyota', JHM: 'Honda', JN: 'Nissan',
-  KM: 'Hyundai', KN: 'Kia',
+  KN: 'Kia',
   WVW: 'Volkswagen', WBA: 'BMW', WDD: 'Mercedes-Benz', WAU: 'Audi',
   WF0: 'Ford', XTA: 'Lada', XW8: 'Chevrolet',
   '5YJ': 'Tesla', '1G': 'General Motors', '1F': 'Ford',
@@ -55,7 +68,7 @@ const VIN_MAKES_3 = {
   JN1: 'Nissan', JN2: 'Nissan', JN3: 'Nissan',
   JN8: 'Nissan', JNZ: 'Nissan',
   KL1: 'Chevrolet', KL2: 'Chevrolet', KL4: 'Chevrolet',
-  KM8: 'Hyundai', KMH: 'Hyundai', KND: 'Kia', KNE: 'Kia',
+  KM8: 'Hyundai', KMH: 'Hyundai', KMJ: 'Hyundai', KML: 'Hyundai', KMM: 'Hyundai', KMN: 'Hyundai', KND: 'Kia', KNE: 'Kia',
   KNF: 'Kia', KNT: 'Kia',
   MAL: 'Mitsubishi', MM0: 'Mitsubishi', MM1: 'Mitsubishi',
   MR0: 'Mitsubishi', MR1: 'Mitsubishi',
@@ -68,24 +81,24 @@ const VIN_MAKES_3 = {
   WV1: 'Volkswagen', WV2: 'Volkswagen', WV3: 'Volkswagen',
   WV4: 'Volkswagen', WV5: 'Volkswagen', WV6: 'Volkswagen',
   WVF: 'Volkswagen',
-  1FA: 'Ford', 1FB: 'Ford', 1FC: 'Ford', 1FD: 'Ford',
-  1FT: 'Ford', 1FV: 'Ford', 1FY: 'Ford',
-  1G1: 'Chevrolet', 1G2: 'Pontiac', 1G3: 'Oldsmobile', 1G4: 'Buick',
-  1G6: 'Cadillac', 1G7: 'Geo', 1G8: 'Saturn', 1GN: 'General Motors',
-  1GT: 'GMC', 1GZ: 'General Motors',
-  1HG: 'Honda', 1HH: 'Honda',
-  1J4: 'Jeep', 1J8: 'Jeep',
-  1N1: 'Nissan', 1N2: 'Nissan', 1N4: 'Nissan', 1N6: 'Nissan', 1N8: 'Nissan',
-  2FA: 'Ford', 2FH: 'Ford', 2FV: 'Ford',
-  2G1: 'Chevrolet', 2G2: 'Pontiac', 2G3: 'Oldsmobile', 2G4: 'Buick',
-  2G6: 'Cadillac', 2G7: 'Geo', 2G8: 'Saturn',
-  2HG: 'Honda',
-  2T1: 'Toyota', 2T2: 'Toyota', 2T3: 'Toyota', 2T4: 'Toyota',
-  2T5: 'Toyota', 2T6: 'Toyota', 2T7: 'Toyota', 2T8: 'Toyota',
-  3C: 'Chrysler', 3D: 'Dodge',
-  4S: 'Subaru',
-  4T: 'Toyota', 4U: 'Acura', 4V: 'Volvo', 4W: 'Volkswagen',
-  5J: 'Toyota', 5K: 'Kia', 5T: 'Toyota',
+  '1FA': 'Ford', '1FB': 'Ford', '1FC': 'Ford', '1FD': 'Ford',
+  '1FT': 'Ford', '1FV': 'Ford', '1FY': 'Ford',
+  '1G1': 'Chevrolet', '1G2': 'Pontiac', '1G3': 'Oldsmobile', '1G4': 'Buick',
+  '1G6': 'Cadillac', '1G7': 'Geo', '1G8': 'Saturn', '1GN': 'General Motors',
+  '1GT': 'GMC', '1GZ': 'General Motors',
+  '1HG': 'Honda', '1HH': 'Honda',
+  '1J4': 'Jeep', '1J8': 'Jeep',
+  '1N1': 'Nissan', '1N2': 'Nissan', '1N4': 'Nissan', '1N6': 'Nissan', '1N8': 'Nissan',
+  '2FA': 'Ford', '2FH': 'Ford', '2FV': 'Ford',
+  '2G1': 'Chevrolet', '2G2': 'Pontiac', '2G3': 'Oldsmobile', '2G4': 'Buick',
+  '2G6': 'Cadillac', '2G7': 'Geo', '2G8': 'Saturn',
+  '2HG': 'Honda',
+  '2T1': 'Toyota', '2T2': 'Toyota', '2T3': 'Toyota', '2T4': 'Toyota',
+  '2T5': 'Toyota', '2T6': 'Toyota', '2T7': 'Toyota', '2T8': 'Toyota',
+  '3C': 'Chrysler', '3D': 'Dodge',
+  '4S': 'Subaru',
+  '4T': 'Toyota', '4U': 'Acura', '4V': 'Volvo', '4W': 'Volkswagen',
+  '5J': 'Toyota', '5K': 'Kia', '5T': 'Toyota', '5NM': 'Hyundai',
 };
 
 const VIN_MAKES_2 = {
@@ -93,12 +106,17 @@ const VIN_MAKES_2 = {
   KM: 'Hyundai', KN: 'Kia',
   WV: 'Volkswagen', WB: 'BMW', WD: 'Mercedes-Benz', WA: 'Audi',
   WF: 'Ford', XT: 'Lada', XW: 'Chevrolet',
-  5Y: 'Tesla', 1G: 'General Motors', 1F: 'Ford',
-  2T: 'Toyota', 3V: 'Volkswagen',
+  '5Y': 'Tesla', '1G': 'General Motors', '1F': 'Ford',
+  '2T': 'Toyota', '3V': 'Volkswagen',
+  '5N': 'Hyundai',
 };
 
 const YEAR_CODES = 'ABCDEFGHJKLMNPRSTVWXY123456789';
 
+// Letters A�Y (skipping I,O,Q,U,Z) = 2010�2030, digits 1�9 = 2001�2009
+// Built-in VIN decoder � extracts make and model year from WMI (chars 1�3) and year code (char 10).
+// NOTE: model (e.g. "Tucson") cannot be determined from VIN alone without a paid decode API.
+// Set VIN_DECODE_API_KEY in server/.env to use the external API for full make/model/year/specs.
 function decodeVin(vin) {
   const make =
     VIN_MAKES_3[vin.slice(0, 3)] ||
@@ -108,10 +126,43 @@ function decodeVin(vin) {
   const i = YEAR_CODES.indexOf(vin[9]);
   let year = '';
   if (i >= 0) {
-    // Буквы A–Y обычно 2010–2030, цифры 1–9 — 2001–2009 (современные автомобили)
+    // Letters A�Y (skipping I,O,Q,U,Z) = 2010�2030, digits 1�9 = 2001�2009
     year = i < 21 ? (2010 + i).toString() : (2001 + (i - 21)).toString();
   }
   return { make, year };
+}
+
+// ═════════════════════════════════════════════════════════════════
+//  Decode VIN via external API (requires VIN_DECODE_API_KEY)
+// ═════════════════════════════════════════════════════════════════
+async function decodeVinViaApi(vin) {
+  if (!isVinApiConfigured()) return null;
+
+  try {
+    const url = `${VIN_DECODE_API_BASE.replace(/\/$/, '')}/${encodeURIComponent(vin)}`;
+    const headers = {};
+    // Most VIN APIs accept the key as a Bearer token. Some providers use a custom header
+    // such as X-Api-Key — uncomment/adjust the line below to match your provider:
+    headers['Authorization'] = `Bearer ${VIN_DECODE_API_KEY}`;
+    // headers['X-Api-Key'] = VIN_DECODE_API_KEY;
+
+    const response = await fetch(url, { headers });
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (!data || typeof data !== 'object') return null;
+
+    // Normalise common provider field names — adjust keys to match your API's response:
+    const make = data.make || data.manufacturer || data.make_name || data.Make || '';
+    const year = data.year || data.model_year || data.Year || data.YearOfManufacture || '';
+    const model = data.model || data.model_name || data.Model || '';
+
+    if (!make && !year) return null;
+    return { make: String(make), year: year ? String(year) : '', model: model ? String(model) : '' };
+  } catch (err) {
+    console.error('VIN decode API error:', err.message);
+    return null;
+  }
 }
 
 function validateVin(vin) {
@@ -262,6 +313,7 @@ app.get('/api/health', (_req, res) => {
     message: live
       ? 'Gemini API connected'
       : 'Running in demo mode — set GEMINI_API_KEY in server/.env to enable AI analysis',
+    vinDecode: isVinApiConfigured() ? 'api' : 'builtin',
   });
 });
 
@@ -284,11 +336,16 @@ app.post('/api/analyze', upload.array('photos', 10), async (req, res) => {
         return res.status(400).json({ error: `Enter a year from 1980 to ${maxY}.` });
     }
 
-    // Decode VIN (built-in)
-    const decoded = decodeVin(vin);
-    const make  = inputMake  || decoded.make;
-    const model = inputModel || '';
-    const year  = inputYear  || decoded.year;
+// Decode VIN via new service (NHTSA > auto.dev > WMI fallback)
+    let decoded = null;
+    try {
+      decoded = await decodeVinService(vin, { apiKey: AUTODEV_API_KEY });
+    } catch (e) {
+      decoded = null;
+    }
+    const make  = inputMake  || (decoded?.basic?.make || '');
+    const model = inputModel || (decoded?.basic?.model || '');
+    const year  = inputYear  || (decoded?.basic?.year || '');
 
     // ── Call Gemini (parallel) — falls back to demo data if key not set ──
     let photoResult = null;
@@ -392,6 +449,24 @@ app.post('/api/analyze-obd', async (req, res) => {
   }
 });
 
+// ── VIN decode endpoint ──
+app.get('/api/vin/:vin', async (req, res) => {
+  try {
+    const { vin } = req.params;
+    const validationErr = validateVinService(vin);
+    if (validationErr) return res.status(400).json({ error: validationErr });
+
+    const result = await decodeVinService(vin, { apiKey: AUTODEV_API_KEY });
+    res.json(result);
+  } catch (err) {
+    console.error('VIN decode error:', err.message);
+    if (err.message.includes('VIN')) {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: 'VIN decoding failed. Please try again.' });
+  }
+});
+
 // ── SPA fallback — serve index.html for all other routes ──
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
@@ -400,10 +475,14 @@ app.get('*', (_req, res) => {
 // ── Start ──
 app.listen(PORT, '0.0.0.0', () => {
   const live = isKeyConfigured();
+  const vinMode = isVinApiConfigured() ? 'external API' : 'built-in tables';
   console.log(`
-🚗 KolikCheck.AI server running at http://localhost:${PORT}
-📡 Mode: ${live ? '✅ LIVE (Gemini API connected)' : '⚠️  DEMO (set GEMINI_API_KEY in server/.env for AI analysis)'}
-`);
+KolikCheck.AI server running at http://localhost:${PORT}
+Mode: ${live ? 'LIVE (Gemini API connected)' : 'DEMO (set GEMINI_API_KEY in server/.env for AI analysis)'} | VIN decoder: ${vinMode}${isVinApiConfigured() ? ' (VIN_DECODE_API_KEY set)' : ''}`
+);
 });
+
+
+
 
 

@@ -267,8 +267,10 @@ footer strong{color:var(--tx)}
     <div class="card">
       <div class="field">
         <label for="inspVin" data-i18n="labelVinReq">VIN (обязательно)</label>
-        <input type="text" id="inspVin" maxlength="20" data-i18n-placeholder="vinPlaceholderInsp" oninput="this.value=this.value.toUpperCase()" />
+        <input type="text" id="inspVin" maxlength="20" data-i18n-placeholder="vinPlaceholderInsp" oninput="this.value=this.value.toUpperCase(); clearManualFields()" />
+        <button type="button" class="btn sm" onclick="decodeVinFromApi()" id="btnDecodeVin" style="margin-left:8px;padding:6px 14px;font-size:.85rem" data-i18n="btnDecodeVin">РҐРµС…РїР°СЃРїРѕСЂС‚ VIN</button>
         <div class="err" id="inspVinErr" style="display:none"></div>
+        <div id="decodeVinStatus" style="font-size:.8rem;color:var(--mut);margin-top:4px;min-height:1.2rem"></div>
       </div>
       <div class="row3">
         <div class="field"><label for="inspMake" data-i18n="labelBrand">Марка</label><input type="text" id="inspMake" placeholder="Toyota" /></div>
@@ -819,7 +821,82 @@ function inspSubmit() {
   startAnalysis()
 }
 
-// Очистить ручные поля марка/модель/год при изменении VIN, чтобы не перебивали декодер
+// ═══════════════════════════════════════════════
+// VIN DECODE API (NHTSA vPIC + auto.dev fallback)
+// ═══════════════════════════════════════════════
+
+async function decodeVinFromApi() {
+  const vinInput = document.getElementById('inspVin')
+  const vin = vinInput.value.trim()
+  const statusEl = document.getElementById('decodeVinStatus')
+  const btn = document.getElementById('btnDecodeVin')
+
+  if (!vin) {
+    statusEl.textContent = t('decodeVinRequired') || 'Сначала введите VIN-код'
+    statusEl.style.color = 'var(--red)'
+    return
+  }
+
+  // Reset status
+  Декодирование...'
+  statusEl.style.color = 'var(--amb)'
+  btn.disabled = true
+  btn.textContent = 'Р“Г–Р·Г’ГЂРџ...'
+
+  try {
+    const res = await fetch('/api/vin/' + encodeURIComponent(vin))
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || 'Сервер вернул ошибку')
+    }
+    const data = await res.json()
+
+    const makeInput = document.getElementById('inspMake')
+    const modelInput = document.getElementById('inspModel')
+    const yearInput = document.getElementById('inspYear')
+
+    if (data.basic?.make) {
+      makeInput.value = data.basic.make
+      statusEl.textContent = 'Марка определена: ' + data.basic.make
+      statusEl.style.color = 'var(--green)'
+    }
+    if (data.basic?.model) {
+      modelInput.value = data.basic.model
+      statusEl.textContent += ' | Модель: ' + data.basic.model
+      statusEl.style.color = 'var(--green)'
+    }
+    if (data.basic?.year) {
+      yearInput.value = data.basic.year
+      if (statusEl.textContent) statusEl.textContent += ' | Год: ' + data.basic.year
+      else statusEl.textContent = 'Год: ' + data.basic.year
+      statusEl.style.color = 'var(--green)'
+    }
+
+    if (data.isPartial) {
+      statusEl.textContent += ' | Частичный декодер (модель не найдена)'
+      statusEl.style.color = 'var(--amber)'
+    } else {
+      statusEl.textContent += ' | Полный декодер'
+      statusEl.style.color = 'var(--green)'
+    }
+
+  } catch (err) {
+    statusEl.textContent = err.message || 'Ошибка при декодировании VIN'
+    statusEl.style.color = 'var(--red)'
+  } finally {
+    btn.disabled = false
+    btn.textContent = t('btnDecodeVin') || 'Р±Р°РґР°Г‘ВЂРџ VIN'
+  }
+}
+
+function clearManualFields() {
+  const vin = document.getElementById('inspVin').value
+  if (vin) {
+    document.getElementById('inspMake').value = ''
+    document.getElementById('inspModel').value = ''
+    document.getElementById('inspYear').value = ''
+  }
+}
 document.getElementById('inspVin')?.addEventListener('input', () => {
   document.getElementById('inspMake').value = ''
   document.getElementById('inspModel').value = ''
