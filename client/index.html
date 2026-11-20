@@ -174,6 +174,7 @@ footer strong{color:var(--tx)}
       <a onclick="goTo('home');setTimeout(()=>document.getElementById('features').scrollIntoView({behavior:'smooth'}),50)" data-i18n="navFeatures">Возможности</a>
       <a onclick="goTo('home');setTimeout(()=>document.getElementById('how').scrollIntoView({behavior:'smooth'}),50)" data-i18n="navHow">Как это работает</a>
       <a onclick="goTo('inspect')" class="btn sm" data-i18n="navInspect">Проверить авто</a>
+      <a onclick="goTo('obd')" data-i18n="navObd">OBD-II коды</a>
       <div class="lang-switch">
         <button class="lang-btn active" onclick="setLang('ru')">RU</button>
         <button class="lang-btn" onclick="setLang('kz')">KZ</button>
@@ -191,6 +192,7 @@ footer strong{color:var(--tx)}
     <a onclick="goTo('home');toggleMobile()" data-i18n="navHome">Главная</a>
     <a onclick="goTo('inspect');toggleMobile()" data-i18n="navInspect">Проверить авто</a>
     <a onclick="goTo('report');toggleMobile()" data-i18n="navReport">Отчет</a>
+    <a onclick="goTo('obd');toggleMobile()" data-i18n="navObd">OBD-II коды</a>
   </div>
 </nav>
 
@@ -300,6 +302,29 @@ footer strong{color:var(--tx)}
   <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
 </div>
 
+<!-- ══ PAGE: OBD-II ══ -->
+<div class="page" id="page-obd">
+  <main class="wrap sec" style="max-width:660px">
+    <h1 style="font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:8px" data-i18n="obdTitle">OBD-II диагностика</h1>
+    <p style="color:var(--mut);margin-bottom:24px" data-i18n="obdLead">Введите код ошибки ECU (например, P0300), чтобы получить расшифровку и рекомендации по ремонту.</p>
+
+    <div class="card">
+      <div class="field">
+        <label data-i18n="obdLabel">Код ошибки OBD-II</label>
+        <input type="text" id="obdCode" maxlength="7" placeholder="P0300" autocomplete="off" style="text-transform:uppercase" />
+        <div class="err" id="obdErr"></div>
+      </div>
+      <button class="btn full" id="obdBtn" onclick="analyzeOBD()">
+        <span id="obdBtnText" data-i18n="obdBtn">Проверить код</span>
+      </button>
+      <div id="obdResult" style="display:none;margin-top:22px"></div>
+    </div>
+
+    <p style="margin-top:16px;color:var(--mut);font-size:.87rem;text-align:center" data-i18n="obdHint">Если ключ GEMINI_API_KEY не настроен на сервере, показывается демо-ответ из локальной базы.</p>
+  </main>
+  <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════
 // I18N DICTIONARIES (RU, KZ, EN)
@@ -311,6 +336,7 @@ const I18N = {
     navHow: "Как это работает",
     navInspect: "Проверить авто",
     navReport: "Отчет",
+    navObd: "OBD-II ошибки",
     heroTitle: "Покупай с умом.<br>Води уверенно.",
     heroLead: "KolikCheck.AI проверяет VIN-код и фотографии автомобиля, находит скрытые дефекты и риски еще до встречи с продавцом.",
     heroCta: "Проверить авто →",
@@ -381,7 +407,13 @@ const I18N = {
     vinPlaceholderInsp: "17 символов",
     analyzeErrorTitle: "Анализ не удался / Ошибка",
     serverConnErr: "Не удалось подключиться к серверу",
-    severities: { Low: "Низкий", Medium: "Средний", Moderate: "Средний", High: "Высокий" }
+    severities: { Low: "Низкий", Medium: "Средний", Moderate: "Средний", High: "Высокий" },
+    obdTitle: "OBD-II диагностика",
+    obdLead: "Введите код ошибки ECU (например, P0300), чтобы получить расшифровку и рекомендации по ремонту.",
+    obdLabel: "Код ошибки OBD-II",
+    obdBtn: "Проверить код",
+    obdHint: "Если ключ GEMINI_API_KEY не настроен на сервере, показывается демо-ответ из локальной базы.",
+    obdErrRequired: "Введите код ошибки."
   },
   kz: {
     navHome: "Басты бет",
@@ -389,6 +421,7 @@ const I18N = {
     navHow: "Қалай жұмыс істейді",
     navInspect: "Көлікті тексеру",
     navReport: "Есеп",
+    navObd: "OBD-II коды",
     heroTitle: "Ақылмен таңда.<br>Сеніммен айда.",
     heroLead: "KolikCheck.AI көліктің VIN-коды мен фотосуреттерін тексеріп, жасырын ақаулар мен қауіптерді сатушымен кездесуге дейін анықтайды.",
     heroCta: "Көлікті тексеру →",
@@ -459,7 +492,13 @@ const I18N = {
     vinPlaceholderInsp: "17 таңба",
     analyzeErrorTitle: "Талдау сәтсіз аяқталды / Қате",
     serverConnErr: "Серверге қосылу мүмкін болмады",
-    severities: { Low: "Төмен", Medium: "Орташа", Moderate: "Орташа", High: "Жоғары" }
+    severities: { Low: "Төмен", Medium: "Орташа", Moderate: "Орташа", High: "Жоғары" },
+    obdTitle: "OBD-II диагностика",
+    obdLead: "Кесілген код енгізіңіз (м.s., P0300), орауға және жолнақ кеңестерге асаңыз.",
+    obdLabel: "OBD-II коды",
+    obdBtn: "Кодты тексеру",
+    obdHint: "Серверде GEMINI_API_KEY кілті қылмаған жағдайда, жергілікті базадан демо-жауап көрсетіледі.",
+    obdErrRequired: "Код сөзіңізді енгізіңіз."
   },
   en: {
     navHome: "Home",
@@ -467,6 +506,7 @@ const I18N = {
     navHow: "How it works",
     navInspect: "Inspect a car",
     navReport: "Latest report",
+    navObd: "OBD-II Codes",
     heroTitle: "Buy smarter.<br>Drive safer.",
     heroLead: "KolikCheck.AI checks a used car's VIN and photos, then shows you its condition, hidden risks and what to ask the seller before you pay.",
     heroCta: "Inspect a car →",
@@ -537,7 +577,13 @@ const I18N = {
     vinPlaceholderInsp: "17 characters",
     analyzeErrorTitle: "Analysis failed / Error",
     serverConnErr: "Could not connect to server",
-    severities: { Low: "Low", Medium: "Medium", Moderate: "Medium", High: "High" }
+    severities: { Low: "Low", Medium: "Medium", Moderate: "Medium", High: "High" },
+    obdTitle: "OBD-II Diagnostics",
+    obdLead: "Enter an ECU error code (e.g. P0300) to get a decode and repair recommendations.",
+    obdLabel: "OBD-II Error Code",
+    obdBtn: "Check Code",
+    obdHint: "If GEMINI_API_KEY is not set on the server, a demo response from the local database is shown.",
+    obdErrRequired: "Enter an error code."
   }
 }
 
@@ -998,6 +1044,77 @@ function renderReport() {
   function init(){applyReveal();initReveal();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
+
+// ═════════════════════════════════════════════════
+// OBD-II ANALYSIS
+// ═════════════════════════════════════════════════
+async function analyzeOBD() {
+  const codeEl = document.getElementById('obdCode')
+  const errEl = document.getElementById('obdErr')
+  const resultEl = document.getElementById('obdResult')
+  const btnText = document.getElementById('obdBtnText')
+  const code = codeEl.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+
+  if (!code) {
+    errEl.textContent = t('obdErrRequired') || 'Введите код ошибки.'
+    errEl.style.display = 'block'
+    return
+  }
+  if (code.length < 4 || code.length > 5) {
+    errEl.textContent = 'Формат кода: буква + 4 цифры (например, P0300).'
+    errEl.style.display = 'block'
+    return
+  }
+  errEl.style.display = 'none'
+  resultEl.style.display = 'none'
+  btnText.textContent = 'Идёт анализ...'
+
+  try {
+    const res = await fetch('/api/analyze-obd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    })
+    if (!res.ok) throw new Error('Ошибка сервера: ' + res.status)
+    const data = await res.json()
+    renderObdResult(data)
+  } catch (e) {
+    btnText.textContent = 'Ошибка'
+    resultEl.style.display = 'block'
+    resultEl.innerHTML = `<div class="card" style="border-color:var(--red)"><div class="err">${e.message}</div></div>`
+    setTimeout(() => { btnText.textContent = t('obdBtn') || 'Проверить код' }, 1500)
+  }
+}
+
+function renderObdResult(data) {
+  const resultEl = document.getElementById('obdResult')
+  const btnText = document.getElementById('obdBtnText')
+  const sev = data.severity || 'Medium'
+  const chipColor = sev === 'High' ? 'var(--red)' : sev === 'Moderate' ? 'var(--amb)' : 'var(--green)'
+
+  let html = `<div class="card" style="margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <strong style="font-size:1.1rem">${data.code}</strong>
+      <span class="chip" style="background:${chipColor}22;color:${chipColor};border:1px solid ${chipColor}">${sev}</span>
+    </div>
+    <p style="margin:0 0 10px">${data.description || 'Нет описания.'}</p>`
+
+  if (data.cause && data.cause.length) {
+    html += `<p style="margin:0 0 6px"><strong>Причина:</strong></p><ul style="margin:0 0 10px;padding-left:18px">${data.cause.map(c => `<li>${c}</li>`).join('')}</ul>`
+  }
+  if (data.recommendations && data.recommendations.length) {
+    html += `<p style="margin:0 0 10px"><strong>Рекомендации:</strong></p><ul style="margin:0;padding-left:18px">${data.recommendations.map(r => `<li>${r}</li>`).join('')}</ul>`
+  }
+  if (data.isDemo) {
+    html += `<p style="margin-top:10px;font-size:.85rem;color:var(--mut)">Демо-ответ (локальная база). Для ИИ-анализа настройте GEMINI_API_KEY на сервере.</p>`
+  }
+  html += `</div>`
+
+  resultEl.innerHTML = html
+  resultEl.style.display = 'block'
+  btnText.textContent = 'Готово'
+  setTimeout(() => { btnText.textContent = t('obdBtn') || 'Проверить код' }, 1500)
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   createUploadZone('heroUpload')
