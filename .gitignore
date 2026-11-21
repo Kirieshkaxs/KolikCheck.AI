@@ -12,3 +12,6 @@ server/.env
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Kilo ai локальные файлы
+.kiloai/

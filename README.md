@@ -12,7 +12,7 @@ Purchasing a used car on the secondary market in Kazakhstan (over 1M+ transactio
 ## 🛠️ Tech Stack
 * **Frontend:** HTML5 / CSS3 / Vanilla JavaScript — single-page application, no frameworks
 * **Backend:** Node.js + Express (REST API for vehicle analysis)
-* **AI & Computer Vision:** Google Gemini API — `gemini-2.5-flash` (multimodal analysis of body photos and OBD-II trouble codes)
+* **AI & Computer Vision:** Google Gemini API — `gemini-3.8-flash` (multimodal analysis of body photos and OBD-II trouble codes)
 * **File Uploads:** Multer (in-memory photo handling for Gemini API processing)
 
 ---

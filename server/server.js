@@ -1,8 +1,10 @@
 // ═══════════════════════════════════════════════════════════════
 //  KolikCheck.AI — Express API Server
+//  VIN decoding is handled entirely by Gemini AI (no external APIs).
 //  Endpoints:
 //    POST /api/analyze       — full vehicle analysis (VIN + photos)
 //    POST /api/analyze-obd   — OBD-II error code analysis
+//    GET  /api/vin/:vin      — VIN decode via Gemini AI
 //    GET  /api/health        — server status & mode check
 // ═══════════════════════════════════════════════════════════════
 
@@ -13,7 +15,6 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
-import { decodeVin as decodeVinService, validateVin as validateVinService } from './vin-decoder.js';
 
 // ── paths ──
 const __filename = fileURLToPath(import.meta.url);
@@ -21,18 +22,6 @@ const __dirname  = path.dirname(__filename);
 
 // Load .env from the server/ folder regardless of CWD
 dotenv.config({ path: path.join(__dirname, '.env') });
-
-// ═════════════════════════════════════════════════════════════════
-//  VIN DECODE API (external, requires API key)
-//  Set VIN_DECODE_API_KEY and optionally VIN_DECODE_API_BASE_URL in server/.env
-// ═════════════════════════════════════════════════════════════════
-const VIN_DECODE_API_KEY  = process.env.VIN_DECODE_API_KEY;
-const VIN_DECODE_API_BASE = process.env.VIN_DECODE_API_BASE_URL || 'https://api.example.com/v1/vin';
-const AUTODEV_API_KEY     = process.env.AUTODEV_API_KEY;
-
-function isVinApiConfigured() {
-  return !!(VIN_DECODE_API_KEY && VIN_DECODE_API_BASE);
-}
 
 // ── express setup ──
 const app  = express();
@@ -54,116 +43,8 @@ const upload = multer({
 });
 
 // ═══════════════════════════════════════════════
-//  VIN DECODER (built-in)
+//  VIN VALIDATION
 // ═══════════════════════════════════════════════
-const VIN_MAKES_3 = {
-  JT: 'Toyota', JHM: 'Honda', JN: 'Nissan',
-  KN: 'Kia',
-  WVW: 'Volkswagen', WBA: 'BMW', WDD: 'Mercedes-Benz', WAU: 'Audi',
-  WF0: 'Ford', XTA: 'Lada', XW8: 'Chevrolet',
-  '5YJ': 'Tesla', '1G': 'General Motors', '1F': 'Ford',
-  '2T': 'Toyota', '3VW': 'Volkswagen',
-  JTD: 'Toyota', JTE: 'Toyota', JTK: 'Toyota', JTL: 'Toyota',
-  JM0: 'Mazda', JM1: 'Mazda', JM2: 'Mazda',
-  JN1: 'Nissan', JN2: 'Nissan', JN3: 'Nissan',
-  JN8: 'Nissan', JNZ: 'Nissan',
-  KL1: 'Chevrolet', KL2: 'Chevrolet', KL4: 'Chevrolet',
-  KM8: 'Hyundai', KMH: 'Hyundai', KMJ: 'Hyundai', KML: 'Hyundai', KMM: 'Hyundai', KMN: 'Hyundai', KND: 'Kia', KNE: 'Kia',
-  KNF: 'Kia', KNT: 'Kia',
-  MAL: 'Mitsubishi', MM0: 'Mitsubishi', MM1: 'Mitsubishi',
-  MR0: 'Mitsubishi', MR1: 'Mitsubishi',
-  SAJ: 'Jaguar', SAL: 'Land Rover', SAM: 'Land Rover',
-  SN1: 'Nissan', SUJ: 'Suzuki',
-  WBS: 'BMW', WBY: 'BMW',
-  WD1: 'Mercedes-Benz', WDB: 'Mercedes-Benz', WDC: 'Mercedes-Benz',
-  WDF: 'Mercedes-Benz', WME: 'Mercedes-Benz', W0L: 'Smart',
-  WA1: 'Audi', WAV: 'Audi',
-  WV1: 'Volkswagen', WV2: 'Volkswagen', WV3: 'Volkswagen',
-  WV4: 'Volkswagen', WV5: 'Volkswagen', WV6: 'Volkswagen',
-  WVF: 'Volkswagen',
-  '1FA': 'Ford', '1FB': 'Ford', '1FC': 'Ford', '1FD': 'Ford',
-  '1FT': 'Ford', '1FV': 'Ford', '1FY': 'Ford',
-  '1G1': 'Chevrolet', '1G2': 'Pontiac', '1G3': 'Oldsmobile', '1G4': 'Buick',
-  '1G6': 'Cadillac', '1G7': 'Geo', '1G8': 'Saturn', '1GN': 'General Motors',
-  '1GT': 'GMC', '1GZ': 'General Motors',
-  '1HG': 'Honda', '1HH': 'Honda',
-  '1J4': 'Jeep', '1J8': 'Jeep',
-  '1N1': 'Nissan', '1N2': 'Nissan', '1N4': 'Nissan', '1N6': 'Nissan', '1N8': 'Nissan',
-  '2FA': 'Ford', '2FH': 'Ford', '2FV': 'Ford',
-  '2G1': 'Chevrolet', '2G2': 'Pontiac', '2G3': 'Oldsmobile', '2G4': 'Buick',
-  '2G6': 'Cadillac', '2G7': 'Geo', '2G8': 'Saturn',
-  '2HG': 'Honda',
-  '2T1': 'Toyota', '2T2': 'Toyota', '2T3': 'Toyota', '2T4': 'Toyota',
-  '2T5': 'Toyota', '2T6': 'Toyota', '2T7': 'Toyota', '2T8': 'Toyota',
-  '3C': 'Chrysler', '3D': 'Dodge',
-  '4S': 'Subaru',
-  '4T': 'Toyota', '4U': 'Acura', '4V': 'Volvo', '4W': 'Volkswagen',
-  '5J': 'Toyota', '5K': 'Kia', '5T': 'Toyota', '5NM': 'Hyundai',
-};
-
-const VIN_MAKES_2 = {
-  JT: 'Toyota', JH: 'Honda', JN: 'Nissan',
-  KM: 'Hyundai', KN: 'Kia',
-  WV: 'Volkswagen', WB: 'BMW', WD: 'Mercedes-Benz', WA: 'Audi',
-  WF: 'Ford', XT: 'Lada', XW: 'Chevrolet',
-  '5Y': 'Tesla', '1G': 'General Motors', '1F': 'Ford',
-  '2T': 'Toyota', '3V': 'Volkswagen',
-  '5N': 'Hyundai',
-};
-
-const YEAR_CODES = 'ABCDEFGHJKLMNPRSTVWXY123456789';
-
-// Letters A�Y (skipping I,O,Q,U,Z) = 2010�2030, digits 1�9 = 2001�2009
-// Built-in VIN decoder � extracts make and model year from WMI (chars 1�3) and year code (char 10).
-// NOTE: model (e.g. "Tucson") cannot be determined from VIN alone without a paid decode API.
-// Set VIN_DECODE_API_KEY in server/.env to use the external API for full make/model/year/specs.
-function decodeVin(vin) {
-  const make =
-    VIN_MAKES_3[vin.slice(0, 3)] ||
-    VIN_MAKES_2[vin.slice(0, 2)] ||
-    '';
-
-  const i = YEAR_CODES.indexOf(vin[9]);
-  let year = '';
-  if (i >= 0) {
-    // Letters A�Y (skipping I,O,Q,U,Z) = 2010�2030, digits 1�9 = 2001�2009
-    year = i < 21 ? (2010 + i).toString() : (2001 + (i - 21)).toString();
-  }
-  return { make, year };
-}
-
-// ═════════════════════════════════════════════════════════════════
-//  Decode VIN via external API (requires VIN_DECODE_API_KEY)
-// ═════════════════════════════════════════════════════════════════
-async function decodeVinViaApi(vin) {
-  if (!isVinApiConfigured()) return null;
-
-  try {
-    const url = `${VIN_DECODE_API_BASE.replace(/\/$/, '')}/${encodeURIComponent(vin)}`;
-    const headers = {};
-    // Most VIN APIs accept the key as a Bearer token. Some providers use a custom header
-    // such as X-Api-Key — uncomment/adjust the line below to match your provider:
-    headers['Authorization'] = `Bearer ${VIN_DECODE_API_KEY}`;
-    // headers['X-Api-Key'] = VIN_DECODE_API_KEY;
-
-    const response = await fetch(url, { headers });
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    if (!data || typeof data !== 'object') return null;
-
-    // Normalise common provider field names — adjust keys to match your API's response:
-    const make = data.make || data.manufacturer || data.make_name || data.Make || '';
-    const year = data.year || data.model_year || data.Year || data.YearOfManufacture || '';
-    const model = data.model || data.model_name || data.Model || '';
-
-    if (!make && !year) return null;
-    return { make: String(make), year: year ? String(year) : '', model: model ? String(model) : '' };
-  } catch (err) {
-    console.error('VIN decode API error:', err.message);
-    return null;
-  }
-}
 
 function validateVin(vin) {
   if (!vin) return 'Enter the 17-character VIN.';
@@ -189,6 +70,61 @@ function getAI() {
     aiInstance = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   }
   return aiInstance;
+}
+
+// ── Timeout wrapper for Gemini API calls ──
+const GEMINI_TIMEOUT_MS = 25000;
+
+function withTimeout(promise, ms = GEMINI_TIMEOUT_MS) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`Gemini API timeout after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
+// ── Decode VIN with Gemini AI ──
+async function decodeVinWithGemini(vin) {
+  const client = getAI();
+  if (!client) return null;
+
+  const response = await withTimeout(
+    client.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: `You are an expert automotive VIN decoder. Decode this VIN: ${vin}
+
+Extract and return the following information based on the VIN code structure (WMI, VDS, VIS):
+- Make (manufacturer brand name)
+- Model (specific model name)
+- Year of manufacture
+- Trim level (if determinable)
+- Body class/type (Sedan, SUV, Hatchback, etc.)
+- Engine displacement in liters, number of cylinders, horsepower, fuel type
+- Transmission type
+- Drive type (FWD, RWD, AWD, 4WD)
+- Country of manufacture
+- Assembly plant city (if known)
+- Full manufacturer name
+
+Respond ONLY with valid JSON (no markdown fences, no extra text):
+{
+  "basic": { "make": "...", "model": "...", "year": "...", "trim": "...", "bodyClass": "...", "driveType": "..." },
+  "engine": { "displacementL": "...", "engineCylinders": "...", "engineHP": "...", "fuelTypePrimary": "...", "transmissionStyle": "..." },
+  "manufacturing": { "plantCountry": "...", "plantCity": "...", "manufacturer": "..." }
+}
+If you cannot reliably determine a field, omit it from the JSON entirely. Only include data that the VIN structure encodes.`,
+    })
+  );
+
+  const text = response.text;
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    const data = JSON.parse(jsonMatch[0]);
+    data.vin = vin;
+    data.isPartial = !data.basic?.model;
+    return data;
+  }
+  return null;
 }
 
 // ── Analyze photos with Gemini Vision ──
@@ -229,10 +165,12 @@ Respond ONLY with valid JSON in this exact format (no markdown fences):
 }`
   );
 
-  const response = await client.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents,
-  });
+  const response = await withTimeout(
+    client.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents,
+    })
+  );
 
   const text = response.text;
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -245,9 +183,10 @@ async function analyzeVinWithGemini(vin, make, model, year) {
   const client = getAI();
   if (!client) return null;
 
-  const response = await client.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: `You are an automotive expert. Given this vehicle information:
+  const response = await withTimeout(
+    client.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: `You are an automotive expert. Given this vehicle information:
 - VIN: ${vin}
 - Make: ${make || 'unknown'}
 - Model: ${model || 'unknown'}
@@ -260,7 +199,8 @@ Respond ONLY with valid JSON (no markdown fences):
   "commonIssues": ["..."],
   "marketNotes": "Brief note about this car in the Kazakhstan / CIS market"
 }`,
-  });
+    })
+  );
 
   const text = response.text;
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -313,7 +253,7 @@ app.get('/api/health', (_req, res) => {
     message: live
       ? 'Gemini API connected'
       : 'Running in demo mode — set GEMINI_API_KEY in server/.env to enable AI analysis',
-    vinDecode: isVinApiConfigured() ? 'api' : 'builtin',
+    vinDecode: live ? 'gemini-ai' : 'demo',
   });
 });
 
@@ -336,12 +276,15 @@ app.post('/api/analyze', upload.array('photos', 10), async (req, res) => {
         return res.status(400).json({ error: `Enter a year from 1980 to ${maxY}.` });
     }
 
-// Decode VIN via new service (NHTSA > auto.dev > WMI fallback)
+    // Decode VIN via Gemini AI
     let decoded = null;
-    try {
-      decoded = await decodeVinService(vin, { apiKey: AUTODEV_API_KEY });
-    } catch (e) {
-      decoded = null;
+    if (isKeyConfigured()) {
+      try {
+        decoded = await decodeVinWithGemini(vin);
+      } catch (e) {
+        console.error('VIN decode via Gemini failed:', e.message);
+        decoded = null;
+      }
     }
     const make  = inputMake  || (decoded?.basic?.make || '');
     const model = inputModel || (decoded?.basic?.model || '');
@@ -429,12 +372,14 @@ app.post('/api/analyze-obd', async (req, res) => {
       });
     }
 
-    const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Расшифруй автомобильную ошибку OBD-II и дай рекомендации для ремонта: ${code}.
+    const response = await withTimeout(
+      client.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: `Расшифруй автомобильную ошибку OBD-II и дай рекомендации для ремонта: ${code}.
 Ответь ТОЛЬКО валидным JSON (без markdown):
 {"code":"...","description":"...","cause":"...","severity":"Low|Medium|High","recommendations":["..."]}`,
-    });
+      })
+    );
 
     const text = response.text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -449,20 +394,27 @@ app.post('/api/analyze-obd', async (req, res) => {
   }
 });
 
-// ── VIN decode endpoint ──
+// ── VIN decode endpoint (Gemini AI) ──
 app.get('/api/vin/:vin', async (req, res) => {
   try {
-    const { vin } = req.params;
-    const validationErr = validateVinService(vin);
-    if (validationErr) return res.status(400).json({ error: validationErr });
+    const vin = (req.params.vin || '').toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/gi, '');
+    const vinErr = validateVin(vin);
+    if (vinErr) return res.status(400).json({ error: vinErr });
 
-    const result = await decodeVinService(vin, { apiKey: AUTODEV_API_KEY });
+    const client = getAI();
+    if (!client) {
+      return res.status(503).json({
+        error: 'Gemini API key not configured. Set GEMINI_API_KEY in server/.env to enable VIN decoding.',
+      });
+    }
+
+    const result = await decodeVinWithGemini(vin);
+    if (!result) {
+      return res.status(500).json({ error: 'Could not decode VIN. Please try again.' });
+    }
     res.json(result);
   } catch (err) {
     console.error('VIN decode error:', err.message);
-    if (err.message.includes('VIN')) {
-      return res.status(400).json({ error: err.message });
-    }
     res.status(500).json({ error: 'VIN decoding failed. Please try again.' });
   }
 });
@@ -475,14 +427,8 @@ app.get('*', (_req, res) => {
 // ── Start ──
 app.listen(PORT, '0.0.0.0', () => {
   const live = isKeyConfigured();
-  const vinMode = isVinApiConfigured() ? 'external API' : 'built-in tables';
   console.log(`
 KolikCheck.AI server running at http://localhost:${PORT}
-Mode: ${live ? 'LIVE (Gemini API connected)' : 'DEMO (set GEMINI_API_KEY in server/.env for AI analysis)'} | VIN decoder: ${vinMode}${isVinApiConfigured() ? ' (VIN_DECODE_API_KEY set)' : ''}`
-);
+Mode: ${live ? 'LIVE (Gemini API connected)' : 'DEMO (set GEMINI_API_KEY in server/.env for AI analysis)'} | VIN decoder: ${live ? 'Gemini AI' : 'demo (no key)'}`
+  );
 });
-
-
-
-
-

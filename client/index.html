@@ -408,6 +408,7 @@ const I18N = {
     vinErrRequired: "Введите 17-значный VIN.",
     vinErrLen: "VIN должен содержать 17 символов. Вы ввели: ",
     vinErrChars: "VIN не может содержать буквы I, O или Q.",
+    decodeVinLoading: "Декодирование...",
     yearErr: "Укажите корректный год выпуска.",
     condGood: "Хорошее состояние",
     condFair: "Удовлетворительное",
@@ -493,6 +494,7 @@ const I18N = {
     vinErrRequired: "17 таңбалы VIN енгізіңіз.",
     vinErrLen: "VIN 17 таңбадан тұруы керек. Сіз енгіздіңіз: ",
     vinErrChars: "VIN құрамында I, O немесе Q әріптері болмауы тиіс.",
+    decodeVinLoading: "Декодтелмеде...",
     yearErr: "Дұрыс шыққан жылын көрсетіңіз.",
     condGood: "Жақсы жағдайда",
     condFair: "Орташа жағдайда",
@@ -838,7 +840,7 @@ async function decodeVinFromApi() {
   }
 
   // Reset status
-  Декодирование...'
+  statusEl.textContent = t('decodeVinLoading') || 'Декодирование...'
   statusEl.style.color = 'var(--amb)'
   btn.disabled = true
   btn.textContent = 'Р“Г–Р·Г’ГЂРџ...'
