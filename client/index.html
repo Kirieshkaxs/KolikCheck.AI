@@ -29,13 +29,13 @@
 :root{--bg:#0d1014;--card:#151a21;--line:#262e3a;--tx:#f3f6fa;--mut:#98a4b5;--blue:#2f7bff;--green:#2de0a5;--red:#ff5d6c;--amb:#ffb84d}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;min-height:100vh}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
 a{color:inherit;text-decoration:none}
 :focus-visible{outline:2px solid var(--green);outline-offset:2px}
 
 /* ── layout ── */
 .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
-.page{display:none}.page.active{display:block}
+.page{display:none}.page.active{display:block;flex:1}
 .sec{padding:60px 20px}
 .center{display:flex;align-items:center;justify-content:center;min-height:60vh}
 
@@ -49,7 +49,6 @@ nav.top .wrap{display:flex;align-items:center;justify-content:space-between;heig
 .nav-links a{cursor:pointer;transition:.15s}.nav-links a:hover{color:var(--tx)}
 .burger{display:none;background:none;border:0;color:var(--tx);font-size:1.5rem;cursor:pointer}
 .nav-mobile{display:none;flex-direction:column;gap:14px;padding:20px;border-top:1px solid var(--line);background:#0d1014f8}
-.nav-mobile.open{display:flex}
 .nav-mobile a{cursor:pointer;color:var(--mut)}.nav-mobile a:hover{color:var(--tx)}
 
 /* ── lang switcher ── */
@@ -163,15 +162,27 @@ input.invalid{border-color:var(--red)!important}
 .score-ring{display:flex;flex-direction:column;align-items:center;gap:6px}
 .h-score{font-size:1rem;font-weight:600}
 
-/* ── footer ── */
-footer{border-top:1px solid var(--line);padding:28px 0;text-align:center;color:var(--mut);font-size:.88rem;margin-top:40px}
-footer strong{color:var(--tx)}
+/* ── pricing and footer ── */
+.pricing{scroll-margin-top:64px}
+.pricing .card{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.pricing h3{margin-bottom:0}
+.pricing .price{font-size:1.5rem;color:var(--tx);font-weight:800}
+.pricing .btn{margin-top:auto;text-align:center}
+.site-footer{border-top:1px solid var(--line);padding:24px 0;text-align:center;color:var(--mut);font-size:.9rem}
+.footer-contacts{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 24px;margin-top:12px}
+.footer-contacts li{min-width:0;max-width:100%}
+.footer-contacts a{display:inline-block;padding:5px 2px;color:var(--tx);text-decoration:underline;text-underline-offset:.2em;overflow-wrap:anywhere}
+.footer-contacts a:hover,.footer-contacts a:focus-visible{color:var(--green)}
+.footer-phone{white-space:nowrap}
 
 /* ── responsive ── */
-@media(max-width:900px){.hero{grid-template-columns:1fr;padding-top:40px}}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;padding-top:40px}
+  .burger{display:block}.nav-links{display:none}.nav-mobile.open{display:flex}
+}
 @media(max-width:700px){
-  .burger{display:block}.nav-links{display:none}
   .cols2,.row3{grid-template-columns:1fr}
+  .footer-contacts{flex-direction:column}
   .repair-row{grid-template-columns:repeat(2,minmax(0,1fr))}
   .repair-row>strong{grid-column:1/-1}
 }
@@ -223,6 +234,7 @@ footer strong{color:var(--tx)}
       <a onclick="goTo('home');scrollTo(0,0)" data-i18n="navHome">Главная</a>
       <a onclick="goTo('home');setTimeout(()=>document.getElementById('features').scrollIntoView({behavior:'smooth'}),50)" data-i18n="navFeatures">Возможности</a>
       <a onclick="goTo('home');setTimeout(()=>document.getElementById('how').scrollIntoView({behavior:'smooth'}),50)" data-i18n="navHow">Как это работает</a>
+      <a href="#pricing" onclick="goTo('home')" data-i18n="pricingTitle">Тарифы</a>
       <a onclick="goTo('inspect')" class="btn sm" data-i18n="navInspect">Проверить авто</a>
       <a onclick="goTo('obd')" data-i18n="navObd">OBD-II коды</a>
       <a onclick="goTo('compare')" data-i18n="navCompare">Сравнение</a>
@@ -245,6 +257,7 @@ footer strong{color:var(--tx)}
     <a onclick="goTo('report');toggleMobile()" data-i18n="navReport">Отчет</a>
     <a onclick="goTo('obd');toggleMobile()" data-i18n="navObd">OBD-II коды</a>
     <a onclick="goTo('compare');toggleMobile()" data-i18n="navCompare">Сравнение</a>
+    <a href="#pricing" onclick="goTo('home');toggleMobile()" data-i18n="pricingTitle">Тарифы</a>
   </div>
 </nav>
 
@@ -296,7 +309,23 @@ footer strong{color:var(--tx)}
     </div>
   </section>
 
-  <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
+  <section class="wrap sec pricing" id="pricing" aria-labelledby="pricingHeading">
+    <h2 id="pricingHeading" data-i18n="pricingTitle">Тарифы</h2>
+    <div class="cols2">
+      <article class="card">
+        <h3 data-i18n="privatePlan">Частная проверка</h3>
+        <p class="price">2 000 ₸</p>
+        <a class="btn" data-i18n="privateWhatsApp" target="_blank" rel="noopener noreferrer"
+          href="https://wa.me/77007726015?text=Здравствуйте!%20Хочу%20заказать%20ИИ-проверку%20авто%20в%20KolikCheck.AI">Заказать проверку в WhatsApp</a>
+      </article>
+      <article class="card">
+        <h3 data-i18n="businessPlan">Автоподборщикам и салонам</h3>
+        <p data-i18n="businessOffer">Бесплатный B2B-пилот на 7 дней</p>
+        <a class="btn ghost" data-i18n="businessWhatsApp" target="_blank" rel="noopener noreferrer"
+          href="https://wa.me/77007726015?text=Здравствуйте!%20Интересует%20бесплатный%20B2B-пилот%20KolikCheck.AI%20на%207%20дней">Подать заявку в WhatsApp</a>
+      </article>
+    </div>
+  </section>
 </div>
 
 <!-- ══ PAGE: INSPECT ══ -->
@@ -336,7 +365,6 @@ footer strong{color:var(--tx)}
     </div>
     <section id="inspectChecklist" class="card tool-card"></section>
   </main>
-  <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
 </div>
 
 <!-- ══ PAGE: ANALYZING ══ -->
@@ -370,7 +398,6 @@ footer strong{color:var(--tx)}
       </div>
     </div>
   </main>
-  <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
 </div>
 
 <!-- ══ PAGE: OBD-II ══ -->
@@ -393,7 +420,6 @@ footer strong{color:var(--tx)}
 
     <p style="margin-top:16px;color:var(--mut);font-size:.87rem;text-align:center" data-i18n="obdHint">Известные коды доступны из локального справочника без Gemini.</p>
   </main>
-  <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
 </div>
 
 <div class="page" id="page-compare">
@@ -402,6 +428,19 @@ footer strong{color:var(--tx)}
     <div id="comparisonContent" class="card"></div>
   </main>
 </div>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><span data-i18n="footerCopyright">© 2026 KolikCheck.AI — Знай, что покупаешь.</span>
+      <span data-i18n="footerDisclaimer">Отчёты носят информационно-рекомендательный характер и не заменяют очную диагностику на СТО.</span></p>
+    <ul class="footer-contacts">
+      <li><span data-i18n="footerPhone">Телефон / WhatsApp</span>
+        <a class="footer-phone" href="https://wa.me/77007726015" target="_blank" rel="noopener noreferrer">+7 700 772 60 15</a></li>
+      <li><span data-i18n="footerEmail">Email</span>
+        <a href="mailto:nursultansamsiev222@gmail.com">nursultansamsiev222@gmail.com</a></li>
+    </ul>
+  </div>
+</footer>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -442,7 +481,16 @@ const I18N = {
     how2Desc: "VIN помогает уточнить марку, модель и год выпуска.",
     how3Title: "Получите отчёт",
     how3Desc: "Посмотрите видимые дефекты и посчитайте смету для торга.",
-    footerTagline: "Знай, что покупаешь.",
+    footerCopyright: "© 2026 KolikCheck.AI — Знай, что покупаешь.",
+    footerDisclaimer: "Отчёты носят информационно-рекомендательный характер и не заменяют очную диагностику на СТО.",
+    footerPhone: "Телефон / WhatsApp",
+    footerEmail: "Email",
+    pricingTitle: "Тарифы",
+    privatePlan: "Частная проверка",
+    privateWhatsApp: "Заказать проверку в WhatsApp",
+    businessPlan: "Автоподборщикам и салонам",
+    businessOffer: "Бесплатный B2B-пилот на 7 дней",
+    businessWhatsApp: "Подать заявку в WhatsApp",
     inspHeading: "Проверка автомобиля",
     inspLead: "Если продавец скрыл VIN, добавьте только фото из объявления или только коды OBD-II со сканера.",
     analyzingTitle: "Анализ автомобиля...",
@@ -535,7 +583,16 @@ const I18N = {
     how2Desc: "VIN көліктің маркасын, моделін және жылын анықтауға көмектеседі.",
     how3Title: "Есеп алыңыз",
     how3Desc: "Көрінетін ақауларды қарап, саудаласу үшін жөндеу сметасын есептеңіз.",
-    footerTagline: "Не сатып алып жатқаныңызды біліңіз.",
+    footerCopyright: "© 2026 KolikCheck.AI — Не сатып алып жатқаныңызды біліңіз.",
+    footerDisclaimer: "Есептер ақпарат пен ұсыным беру үшін жасалады және автосервисте көлікті көзбе-көз диагностикалауды алмастырмайды.",
+    footerPhone: "Телефон / WhatsApp",
+    footerEmail: "Электрондық пошта",
+    pricingTitle: "Тарифтер",
+    privatePlan: "Жеке тексеріс",
+    privateWhatsApp: "WhatsApp арқылы тексеріске тапсырыс беру",
+    businessPlan: "Көлік таңдау мамандары мен автосалондарға",
+    businessOffer: "7 күндік тегін B2B пилоттық бағдарламасы",
+    businessWhatsApp: "WhatsApp арқылы өтінім беру",
     inspHeading: "Көлікті тексеру",
     inspLead: "Сатушы VIN-ді жасырса, хабарландырудағы фотоларды немесе OBD-II сканерінің кодтарын ғана қосыңыз.",
     analyzingTitle: "Көлік талдануда...",
@@ -628,7 +685,16 @@ const I18N = {
     how2Desc: "A VIN helps identify the make, model and model year.",
     how3Title: "Read your report",
     how3Desc: "Review visible defects and build a repair estimate for negotiation.",
-    footerTagline: "Know what you're buying.",
+    footerCopyright: "© 2026 KolikCheck.AI — Know what you’re buying.",
+    footerDisclaimer: "Reports provide information and recommendations and do not replace an in-person inspection at an auto repair shop.",
+    footerPhone: "Phone / WhatsApp",
+    footerEmail: "Email",
+    pricingTitle: "Pricing",
+    privatePlan: "Private vehicle inspection",
+    privateWhatsApp: "Order an inspection on WhatsApp",
+    businessPlan: "For car sourcing specialists and dealerships",
+    businessOffer: "Free 7-day B2B pilot",
+    businessWhatsApp: "Apply on WhatsApp",
     inspHeading: "Inspect a vehicle",
     inspLead: "If the seller keeps the VIN private, submit listing photos or OBD-II scanner codes on their own.",
     analyzingTitle: "Analyzing your vehicle",
