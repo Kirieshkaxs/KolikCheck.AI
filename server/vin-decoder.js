@@ -44,11 +44,11 @@ function toBool(v) {
   if (s === 'false' || s === '0' || s === 'no' || s === 'нет') return false;
   return undefined;
 }
-const fetchJson = async (url, { timeoutMs = 4000 } = {}) => {
+const fetchJson = async (url, { timeoutMs = 4000, headers } = {}) => {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { signal: ctrl.signal });
+    const res = await fetch(url, { signal: ctrl.signal, headers, redirect: 'error' });
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; } finally { clearTimeout(t); }
@@ -129,22 +129,30 @@ const decodeViaNhtsa = async (vin) => {
 
 const decodeViaAutodev = async (vin, apiKey) => {
   if (!apiKey) return null;
-  const url = `https://auto.dev/api/vin/${encodeURIComponent(vin)}?apikey=${encodeURIComponent(apiKey)}`;
-  const body = await fetchJson(url);
-  if (!body) return null;
+  const url = `https://auto.dev/api/vin/${encodeURIComponent(vin)}`;
+  const body = await fetchJson(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+  if (!body || typeof body !== 'object') return null;
+  const named = value => typeof value === 'string' ? value : value?.name;
+  const singleYear = body.years?.length === 1 ? body.years[0] : null;
+  const year = body.year ?? singleYear?.year;
+  const style = singleYear?.styles?.length === 1 ? singleYear.styles[0] : null;
   const basic = {};
-  if (body.make) basic.make = body.make;
-  if (body.model) basic.model = body.model;
-  if (body.year) basic.year = String(body.year);
-  if (body.trim) basic.trim = body.trim;
-  if (body.body_class) basic.bodyClass = body.body_class;
-  if (body.drive_type) basic.driveType = body.drive_type;
+  if (named(body.make)) basic.make = named(body.make);
+  if (named(body.model)) basic.model = named(body.model);
+  if (Number.isInteger(Number(year)) && Number(year) >= 1980) basic.year = String(year);
+  if (body.trim || style?.trim) basic.trim = body.trim ?? style.trim;
+  if (body.body_class || body.categories?.primaryBodyType) basic.bodyClass = body.body_class ?? body.categories.primaryBodyType;
+  if (body.drive_type || body.drivenWheels) basic.driveType = body.drive_type ?? body.drivenWheels;
   const engine = {};
-  if (body.displacement_l) engine.displacementL = body.displacement_l;
-  if (body.engine_cylinders) engine.engineCylinders = body.engine_cylinders;
-  if (body.engine_hp) engine.engineHP = body.engine_hp;
-  if (body.fuel_type_primary) engine.fuelTypePrimary = body.fuel_type_primary;
-  if (body.transmission_style) engine.transmissionStyle = body.transmission_style;
+  for (const [key, value] of Object.entries({
+    displacementL: body.displacement_l ?? body.engine?.size,
+    engineCylinders: body.engine_cylinders ?? body.engine?.cylinder,
+    engineHP: body.engine_hp ?? body.engine?.horsepower,
+    fuelTypePrimary: body.fuel_type_primary ?? body.engine?.fuelType,
+    transmissionStyle: body.transmission_style ?? body.transmission?.transmissionType,
+  })) {
+    if (value) engine[key] = value;
+  }
   const manufacturing = {};
   if (body.plant_country) manufacturing.plantCountry = body.plant_country;
   if (body.plant_city) manufacturing.plantCity = body.plant_city;
@@ -259,7 +267,7 @@ export const decodeVin = async (vin, { apiKey } = {}) => {
   }
 
   // 2. Fallback: auto.dev if NHTSA missing Model and key is set
-  if (!result.basic.model && apiKey) {
+  if ((!result.basic.model || !result.basic.make || !result.basic.year) && apiKey) {
     fillMissing(await decodeViaAutodev(cleanVin, apiKey), 'autodev');
   }
   fillMissing(decodeViaWmi(cleanVin), 'wmi');

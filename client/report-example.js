@@ -126,16 +126,19 @@ function openCamryExample() {
   setCurrentReport({
     id: EXAMPLE_ID,
     isExample: true,
+    ...localizedCamryExample(),
     vin: '4T1B11HK0KU000000',
     vehicle: { make: 'Toyota', model: 'Camry 70', year: '2019' },
     score: 68,
     risk: 'High',
     hasPhotos: true,
     photoAnalyzed: true,
+    photoStatus: 'success',
     assessedViews: ['front', 'rear', 'right'],
     submittedViews: ['front', 'rear', 'right'],
     photos: [],
     history: [],
+    generatedAt: new Date().toISOString(),
     repairCosts: [['90000', '150000'], ['18000', '35000'], ['25000', '45000']],
     comparisonDefaults: { price: '11900000', mileage: '126000' },
   })
@@ -178,12 +181,13 @@ function repairEstimateHtml(report) {
     <p>${t(report.isExample ? 'repairExampleHelp' : 'repairHelp')}</p>
     ${items.map((label, index) => `<div class="repair-row">
       <strong id="repair-item-${index}">${escapeHtml(label)}</strong>
-      ${['repairMin', 'repairMax'].map((bound, column) => `<div>
+      ${['repairMin', 'repairMax'].map((bound, column) => `<div class="repair-input">
         <label for="repair-${index}-${column}" id="repair-bound-${index}-${column}">${t(bound)}</label>
         <input type="number" min="0" max="1000000000" step="1" id="repair-${index}-${column}"
           aria-labelledby="repair-item-${index} repair-bound-${index}-${column}"
           data-row="${index}" data-column="${column}" value="${escapeHtml(report.repairCosts[index][column])}">
       </div>`).join('')}
+      <span class="print-only" data-printed-cost="${index}"></span>
     </div>`).join('')}
     <div class="repair-total">${t('repairTotal')} <output id="repairTotal" aria-live="polite"></output></div>
     <div class="err" id="repairError" role="status"></div>
@@ -199,12 +203,17 @@ function bindRepairEstimate(report) {
     const result = repairTotals(report.repairCosts)
     output.textContent = result.count ? formatRepairRange(result) : '—'
     error.textContent = result.invalid ? t('repairInvalid') : ''
+    section.querySelectorAll('[data-printed-cost]').forEach(el => {
+      const amount = repairTotals([report.repairCosts[el.dataset.printedCost]])
+      el.textContent = amount.count ? formatRepairRange(amount) : '—'
+    })
   }
   section.oninput = event => {
     const input = event.target
     if (!input.matches('input[data-row]')) return
     report.repairCosts[input.dataset.row][input.dataset.column] = input.validity.badInput ? 'invalid' : input.value
     update()
+    saveCurrentReport()
   }
   update()
 }

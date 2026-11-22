@@ -5,6 +5,7 @@
   "description": "KolikCheck.AI — Smart vehicle inspection platform powered by Gemini AI",
   "scripts": {
     "start": "node server/server.js",
+    "test": "node --test server/test/audit.test.js",
     "dev": "node --watch server/server.js",
     "install:server": "cd server && npm install"
   }

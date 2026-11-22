@@ -148,7 +148,8 @@ function vinField(field) {
 }
 
 function vinSourceLabel(source) {
-  return ({ vpic: 'NHTSA vPIC', autodev: 'auto.dev', wmi: t('sourceWmi'), manual: t('sourceManual') })[source] ?? ''
+  const labels = { vpic: 'NHTSA vPIC', autodev: 'auto.dev', wmi: t('sourceWmi'), manual: t('sourceManual') }
+  return Object.hasOwn(labels, source) ? labels[source] : ''
 }
 
 function updateVinSourceLabels() {
@@ -204,7 +205,7 @@ function parseObdCodes(value) {
 }
 
 async function fetchObdBatch(codes) {
-  const response = await fetch('/api/analyze-obd', {
+  const response = await fetch(apiUrl('/api/analyze-obd'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ codes }),
@@ -219,7 +220,8 @@ function resultList(items) {
 }
 
 function obdResultsHtml(results) {
-  const ordered = [...results].sort((a, b) => (OBD_PRIORITY[b.severity] ?? 0) - (OBD_PRIORITY[a.severity] ?? 0))
+  const ordered = results.map(row => ({ ...row, ...row.translations?.[currentLang] }))
+    .sort((a, b) => (OBD_PRIORITY[b.severity] ?? 0) - (OBD_PRIORITY[a.severity] ?? 0))
   const priority = ordered.filter(row => row.recommendations?.length)
   const recommended = new Set()
   const sequence = priority.flatMap(row => row.recommendations.map(text => ({ code: row.code, text })))
@@ -239,7 +241,7 @@ function obdResultsHtml(results) {
       <p>${escapeHtml(row.description || t('obdUnavailable'))}</p>
       ${row.cause?.length ? `<h4>${t('obdCauses')}</h4>${resultList(row.cause)}` : ''}
       ${row.source === 'local' ? `<p class="hint">${t('obdLocal')}</p>` : ''}
-      ${row.source === 'gemini' ? `<p class="hint">${t('obdAi')}</p>` : ''}
+      ${row.source === 'gemini' ? `<p class="hint">${t('obdAi')}${row.language !== currentLang ? ' ' + t('originalLanguage') : ''}</p>` : ''}
     </div>`).join('')
     return `<section class="obd-group"><h4>${t('obdSystems')[index]}</h4>${entries}</section>`
   }).join('')
@@ -324,7 +326,7 @@ function bindCompareForm() {
   const form = document.getElementById('compareForm')
   const report = state.report
   const details = () => Object.fromEntries(new FormData(form))
-  form.oninput = () => { report.comparisonDraft = details() }
+  form.oninput = () => { report.comparisonDraft = details(); saveCurrentReport() }
   form.onsubmit = event => {
     event.preventDefault()
     const status = document.getElementById('compareSaveStatus')

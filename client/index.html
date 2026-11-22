@@ -45,7 +45,7 @@ nav.top .wrap{display:flex;align-items:center;justify-content:space-between;heig
 .logo{display:flex;gap:10px;align-items:center;font-weight:800;font-size:1.1rem;cursor:pointer}
 .logo-icon{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--green));display:grid;place-items:center;font-weight:900;color:#04121f;font-size:.9rem}
 .logo b{color:var(--green)}
-.nav-links{display:flex;gap:20px;align-items:center;color:var(--mut)}
+.nav-links{display:flex;gap:14px;align-items:center;color:var(--mut)}
 .nav-links a{cursor:pointer;transition:.15s}.nav-links a:hover{color:var(--tx)}
 .burger{display:none;background:none;border:0;color:var(--tx);font-size:1.5rem;cursor:pointer}
 .nav-mobile{display:none;flex-direction:column;gap:14px;padding:20px;border-top:1px solid var(--line);background:#0d1014f8}
@@ -87,10 +87,11 @@ label{display:block;font-size:.9rem;font-weight:600;margin-bottom:6px}
 input[type=text],input[type=number],textarea,select{width:100%;background:#0f1318;border:1px solid var(--line);color:var(--tx);padding:12px 14px;border-radius:12px;font-size:1rem;font-family:inherit;transition:.15s}
 input:focus,textarea:focus,select:focus{border-color:var(--blue);outline:none}
 textarea{resize:vertical}
-input.invalid{border-color:var(--red)!important}
+[aria-invalid="true"]{border-color:var(--red)!important}
 .err{color:var(--red);font-size:.87rem;margin-top:5px}
 .hint{font-size:.87rem;color:var(--mut);margin-top:10px}
 .hint a{color:var(--green);cursor:pointer;text-decoration:underline}
+.link-button{background:none;border:0;color:var(--green);font:inherit;cursor:pointer;text-decoration:underline;text-align:left}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 
 /* ── upload ── */
@@ -156,14 +157,14 @@ input.invalid{border-color:var(--red)!important}
 .damage-row:last-child{border:0}
 .damage-row .info strong{display:block;margin-bottom:2px;font-size:.95rem}
 .damage-row .info span{color:var(--mut);font-size:.88rem}
-.meter{height:10px;border-radius:9px;background:linear-gradient(90deg,var(--green),var(--amb),var(--red));position:relative;margin:20px 0 16px}
-.meter-pin{position:absolute;top:-5px;width:6px;height:20px;border-radius:4px;background:#fff;transform:translateX(-50%);box-shadow:0 0 0 3px var(--bg)}
+.meter{height:10px;border-radius:9px;background:linear-gradient(90deg,var(--green) 0 20%,var(--amb) 20% 30%,var(--red) 30% 100%);position:relative;margin:20px 3px 16px}
+.meter-pin{position:absolute;top:-5px;width:6px;height:20px;border-radius:4px;background:var(--pin-color);transform:translateX(-50%);box-shadow:0 0 0 2px var(--tx)}
 .recs{padding-left:20px;color:var(--mut)}.recs li{margin-bottom:8px;font-size:.95rem}
 .score-ring{display:flex;flex-direction:column;align-items:center;gap:6px}
 .h-score{font-size:1rem;font-weight:600}
 
 /* ── pricing and footer ── */
-.pricing{scroll-margin-top:64px}
+#features,#how,.pricing{scroll-margin-top:64px}
 .pricing .card{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .pricing h3{margin-bottom:0}
 .pricing .price{font-size:1.5rem;color:var(--tx);font-weight:800}
@@ -187,7 +188,30 @@ input.invalid{border-color:var(--red)!important}
   .repair-row>strong{grid-column:1/-1}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-@media print{.comparison-editor{display:none}}
+.print-only{display:none}
+@media print{
+  @page{margin:14mm}
+  :root{--bg:#fff;--card:#fff;--tx:#111827;--mut:#374151;--line:#cbd5e1;--green:#075e47;--amb:#8a4b08;--red:#9b1c1c}
+  html,body{display:block;background:#fff;color:var(--tx);min-height:0}
+  .page{animation:none!important;transform:none!important}
+  .page:not(.active),nav,.site-footer,.report-actions,.comparison-editor,.link-button,.repair-input,.ka-toast{display:none!important}
+  .print-only{display:block}
+  .wrap,.sec{max-width:none;padding:0}
+  .card{box-shadow:none;padding:10px;margin-bottom:8px}
+  .cols2{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:start}
+  .cols2>.card{break-inside:avoid}
+  .thumbs{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .thumbs li{break-inside:avoid}
+  .thumbs img{object-fit:contain}
+  .repair-row{grid-template-columns:1fr 1fr}
+  .repair-row>strong{grid-column:auto}
+  .spec-row,.damage-row,.repair-row,.obd-entry,.score-ring,.demo-banner{break-inside:avoid}
+  .spec-row .v{word-break:normal;overflow-wrap:anywhere}
+  h1,h2,h3,h4{break-after:avoid}
+  .score-ring svg text{fill:var(--tx)}
+  .meter,.meter-pin,.chip{print-color-adjust:exact}
+  .ka-stagger,.ka-reveal{opacity:1!important;transform:none!important}
+}
 </style>
 <style id="kolik-anim">
 /* ════════════════════════════════════════════════════════════════════════════════════
@@ -226,25 +250,26 @@ input.invalid{border-color:var(--red)!important}
 <!-- ══ NAV ══ -->
 <nav class="top">
   <div class="wrap">
-    <div class="logo" onclick="goTo('home')">
+    <a class="logo" href="#home" data-route aria-label="KolikCheck.AI">
       <div class="logo-icon">K</div>
       <span>KolikCheck<b>.AI</b></span>
-    </div>
+    </a>
     <div class="nav-links">
-      <a onclick="goTo('home');scrollTo(0,0)" data-i18n="navHome">Главная</a>
-      <a onclick="goTo('home');setTimeout(()=>document.getElementById('features').scrollIntoView({behavior:'smooth'}),50)" data-i18n="navFeatures">Возможности</a>
-      <a onclick="goTo('home');setTimeout(()=>document.getElementById('how').scrollIntoView({behavior:'smooth'}),50)" data-i18n="navHow">Как это работает</a>
-      <a href="#pricing" onclick="goTo('home')" data-i18n="pricingTitle">Тарифы</a>
-      <a onclick="goTo('inspect')" class="btn sm" data-i18n="navInspect">Проверить авто</a>
-      <a onclick="goTo('obd')" data-i18n="navObd">OBD-II коды</a>
-      <a onclick="goTo('compare')" data-i18n="navCompare">Сравнение</a>
+      <a href="#home" data-route data-i18n="navHome">Главная</a>
+      <a href="#features" data-route data-i18n="navFeatures">Возможности</a>
+      <a href="#how" data-route data-i18n="navHow">Как это работает</a>
+      <a href="#pricing" data-route data-i18n="pricingTitle">Тарифы</a>
+      <a href="#inspect" data-route class="btn sm" data-i18n="navInspect">Проверить авто</a>
+      <a href="#report" data-route data-i18n="navReport">Отчёт</a>
+      <a href="#obd" data-route data-i18n="navObd">OBD-II коды</a>
+      <a href="#compare" data-route data-i18n="navCompare">Сравнение</a>
       <div class="lang-switch">
         <button class="lang-btn active" onclick="setLang('ru')">RU</button>
         <button class="lang-btn" onclick="setLang('kz')">KZ</button>
         <button class="lang-btn" onclick="setLang('en')">EN</button>
       </div>
     </div>
-    <button class="burger" onclick="toggleMobile()" aria-label="Menu">☰</button>
+    <button type="button" id="mobileMenuButton" class="burger" onclick="toggleMobile()" aria-label="Меню" aria-controls="navMobile" aria-expanded="false">☰</button>
   </div>
   <div class="nav-mobile" id="navMobile">
     <div class="lang-switch" style="align-self:flex-start;margin-bottom:8px">
@@ -252,12 +277,12 @@ input.invalid{border-color:var(--red)!important}
       <button class="lang-btn" onclick="setLang('kz')">KZ</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
     </div>
-    <a onclick="goTo('home');toggleMobile()" data-i18n="navHome">Главная</a>
-    <a onclick="goTo('inspect');toggleMobile()" data-i18n="navInspect">Проверить авто</a>
-    <a onclick="goTo('report');toggleMobile()" data-i18n="navReport">Отчет</a>
-    <a onclick="goTo('obd');toggleMobile()" data-i18n="navObd">OBD-II коды</a>
-    <a onclick="goTo('compare');toggleMobile()" data-i18n="navCompare">Сравнение</a>
-    <a href="#pricing" onclick="goTo('home');toggleMobile()" data-i18n="pricingTitle">Тарифы</a>
+    <a href="#home" data-route data-i18n="navHome">Главная</a>
+    <a href="#inspect" data-route data-i18n="navInspect">Проверить авто</a>
+    <a href="#report" data-route data-i18n="navReport">Отчёт</a>
+    <a href="#obd" data-route data-i18n="navObd">OBD-II коды</a>
+    <a href="#compare" data-route data-i18n="navCompare">Сравнение</a>
+    <a href="#pricing" data-route data-i18n="pricingTitle">Тарифы</a>
   </div>
 </nav>
 
@@ -275,18 +300,18 @@ input.invalid{border-color:var(--red)!important}
     <div class="card">
       <div class="field">
         <label for="heroVin" data-i18n="labelVinOptional">VIN (необязательно)</label>
-        <input type="text" id="heroVin" maxlength="20" data-i18n-placeholder="vinPlaceholderHero" oninput="this.value=this.value.toUpperCase()" />
-        <div class="err" id="heroVinErr" style="display:none"></div>
+        <input type="text" id="heroVin" aria-describedby="heroVinErr" maxlength="20" data-i18n-placeholder="vinPlaceholderHero" oninput="this.value=this.value.toUpperCase()" />
+        <div class="err" id="heroVinErr" role="alert" style="display:none"></div>
       </div>
       <div id="heroUpload"></div>
       <div class="field tool-card">
         <label for="heroObd" data-i18n="inspectObd">Коды OBD-II (необязательно)</label>
-        <textarea id="heroObd" rows="1" maxlength="160" placeholder="P0300, P0420"></textarea>
-        <div class="err" id="heroObdErr" style="display:none"></div>
+        <textarea id="heroObd" aria-describedby="heroObdErr" rows="1" maxlength="160" placeholder="P0300, P0420"></textarea>
+        <div class="err" id="heroObdErr" role="alert" style="display:none"></div>
       </div>
       <button class="btn full" onclick="heroSubmit()" data-i18n="btnAnalyze">Анализировать авто</button>
       <div class="err" id="heroEvidenceErr" role="alert" style="display:none"></div>
-      <p class="hint"><span data-i18n="hintMore">Нужны подробные параметры?</span> <a onclick="goTo('inspect')" data-i18n="hintFullForm">Открыть полную форму</a></p>
+      <p class="hint"><span data-i18n="hintMore">Нужны подробные параметры?</span> <a href="#inspect" data-route data-i18n="hintFullForm">Открыть полную форму</a></p>
     </div>
   </section>
 
@@ -336,19 +361,19 @@ input.invalid{border-color:var(--red)!important}
     <div class="card">
       <div class="field">
         <label for="inspVin" data-i18n="labelVinOptional">VIN (необязательно)</label>
-        <input type="text" id="inspVin" maxlength="20" data-i18n-placeholder="vinPlaceholderInsp" oninput="this.value=this.value.toUpperCase()" />
+        <input type="text" id="inspVin" aria-describedby="inspVinErr" maxlength="20" data-i18n-placeholder="vinPlaceholderInsp" oninput="this.value=this.value.toUpperCase()" />
         <button type="button" class="btn sm" onclick="decodeVinFromApi()" id="btnDecodeVin" style="margin-left:8px;padding:6px 14px;font-size:.85rem" data-i18n="btnDecodeVin">Расшифровать VIN</button>
-        <div class="err" id="inspVinErr" style="display:none"></div>
-        <div id="decodeVinStatus" style="font-size:.8rem;color:var(--mut);margin-top:4px;min-height:1.2rem"></div>
+        <div class="err" id="inspVinErr" role="alert" style="display:none"></div>
+        <div id="decodeVinStatus" role="status" style="font-size:.8rem;color:var(--mut);margin-top:4px;min-height:1.2rem"></div>
       </div>
       <div class="row3">
         <div class="field"><label for="inspMake" data-i18n="labelBrand">Марка</label><input type="text" id="inspMake" maxlength="120" placeholder="Toyota" /><small id="inspMakeSource" class="hint"></small></div>
         <div class="field"><label for="inspModel" data-i18n="labelModel">Модель</label><input type="text" id="inspModel" maxlength="120" placeholder="Camry" /><small id="inspModelSource" class="hint"></small></div>
         <div class="field">
           <label for="inspYear" data-i18n="labelYear">Год</label>
-          <input type="number" id="inspYear" placeholder="2019" min="1980" />
+          <input type="number" id="inspYear" aria-describedby="inspYearErr" placeholder="2019" min="1980" />
           <small id="inspYearSource" class="hint"></small>
-          <div class="err" id="inspYearErr" style="display:none"></div>
+          <div class="err" id="inspYearErr" role="alert" style="display:none"></div>
         </div>
       </div>
       <div class="field">
@@ -357,8 +382,8 @@ input.invalid{border-color:var(--red)!important}
       </div>
       <div class="field">
         <label for="inspObd" data-i18n="inspectObd">Коды OBD-II (необязательно)</label>
-        <textarea id="inspObd" rows="2" maxlength="160" placeholder="P0300, P0420"></textarea>
-        <div id="inspObdErr" class="err" style="display:none"></div>
+        <textarea id="inspObd" aria-describedby="inspObdErr" rows="2" maxlength="160" placeholder="P0300, P0420"></textarea>
+        <div id="inspObdErr" role="alert" class="err" style="display:none"></div>
       </div>
       <button class="btn full" onclick="inspSubmit()" data-i18n="btnAnalyze">Анализировать авто</button>
       <div class="err" id="inspEvidenceErr" role="alert" style="display:none"></div>
@@ -376,7 +401,7 @@ input.invalid{border-color:var(--red)!important}
       <div class="bar"><div class="bar-fill" id="analyzeBar" style="width:0%"></div></div>
       <ul class="stages" id="stageList"></ul>
       <div id="analyzeError" style="display:none;margin-top:16px">
-        <div class="err" id="analyzeErrMsg" style="margin-bottom:16px;font-size:1rem"></div>
+        <div class="err" id="analyzeErrMsg" role="alert" style="margin-bottom:16px;font-size:1rem"></div>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
           <button class="btn ghost" onclick="goTo('inspect')" data-i18n="btnEdit">Изменить данные</button>
           <button class="btn" onclick="startAnalysis()" data-i18n="btnRetry">Повторить</button>
@@ -409,8 +434,8 @@ input.invalid{border-color:var(--red)!important}
     <div class="card">
       <div class="field">
         <label for="obdCode" data-i18n="obdLabel">Коды OBD-II</label>
-        <textarea id="obdCode" rows="3" maxlength="160" placeholder="P0300, P0420" autocomplete="off" style="text-transform:uppercase"></textarea>
-        <div class="err" id="obdErr"></div>
+        <textarea id="obdCode" aria-describedby="obdErr" rows="3" maxlength="160" placeholder="P0300, P0420" autocomplete="off" style="text-transform:uppercase"></textarea>
+        <div class="err" id="obdErr" role="alert"></div>
       </div>
       <button class="btn full" id="obdBtn" onclick="analyzeOBD()">
         <span id="obdBtnText" data-i18n="obdBtn">Проверить код</span>
@@ -523,8 +548,6 @@ const I18N = {
     visualTitle: "Визуальный осмотр AI",
     recsTitle: "Рекомендации для покупателя",
     btnNewInsp: "Новая проверка",
-    btnPdf: "⬇ Скачать PDF",
-    noPhotosText: "Фото не загружены — визуальный осмотр недоступен.",
     runWithPhotos: "Проверить авто с фото",
     generatedAtText: "Отчет сформирован:",
     demoBanner: "⚠️ ДЕМО-РЕЖИМ — Отчет построен на тестовых данных. Добавьте GEMINI_API_KEY на сервере для живого AI анализа.",
@@ -546,8 +569,6 @@ const I18N = {
     btnDecodeVin: "Расшифровать VIN",
     decodeVinLoading: "Расшифровка…",
     noVisibleDamage: "На предоставленных фото видимых повреждений не обнаружено.",
-    photoUnavailable: "Не удалось проанализировать фотографии.",
-    historyUnavailable: "Данные об истории автомобиля недоступны."
   },
   kz: {
     navHome: "Басты бет",
@@ -625,8 +646,6 @@ const I18N = {
     visualTitle: "AI Визуалды бақылау",
     recsTitle: "Сатып алушыға кеңестер",
     btnNewInsp: "Жаңа тексеру",
-    btnPdf: "⬇ PDF жүктеп алу",
-    noPhotosText: "Суреттер жүктелмеді — визуалды тексеру қолжетімсіз.",
     runWithPhotos: "Суреттермен қайта тексеру",
     generatedAtText: "Есеп дайындалды:",
     demoBanner: "⚠️ ДЕМО-РЕЖИМ — Бұл есеп демо-деректерден құралған. AI талдау үшін серверге GEMINI_API_KEY орнатыңыз.",
@@ -648,8 +667,6 @@ const I18N = {
     btnDecodeVin: "VIN кодын ашу",
     decodeVinLoading: "VIN коды ашылуда…",
     noVisibleDamage: "Фотосуреттерден көзге көрінетін зақым табылмады.",
-    photoUnavailable: "Фотосуреттерді талдау мүмкін болмады.",
-    historyUnavailable: "Көлік тарихы туралы деректер қолжетімсіз."
   },
   en: {
     navHome: "Home",
@@ -727,8 +744,6 @@ const I18N = {
     visualTitle: "Visual inspection",
     recsTitle: "Recommendations for the buyer",
     btnNewInsp: "New inspection",
-    btnPdf: "⬇ Download PDF",
-    noPhotosText: "No photos were uploaded — visual inspection unavailable.",
     runWithPhotos: "Run a new inspection with photos.",
     generatedAtText: "Report generated:",
     demoBanner: "⚠️ DEMO DATA — This report uses sample data. Set GEMINI_API_KEY on the server to enable real AI analysis.",
@@ -750,8 +765,6 @@ const I18N = {
     btnDecodeVin: "Decode VIN",
     decodeVinLoading: "Decoding…",
     noVisibleDamage: "No visible damage was detected in the supplied photos.",
-    photoUnavailable: "The photos could not be analyzed.",
-    historyUnavailable: "Vehicle history is unavailable."
   }
 }
 
@@ -762,12 +775,16 @@ function t(key) {
 }
 
 function setLang(lang) {
-  if (!I18N[lang]) return;
+  if (!Object.hasOwn(I18N, lang)) return;
   currentLang = lang;
+  try { localStorage.setItem(LANGUAGE_STORAGE_KEY, lang) } catch {}
   document.documentElement.lang = lang === 'kz' ? 'kk' : lang;
+  document.getElementById('mobileMenuButton').setAttribute('aria-label', t('menuLabel'));
 
   document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === lang);
+    const selected = btn.textContent.trim().toLowerCase() === lang;
+    btn.classList.toggle('active', selected);
+    btn.setAttribute('aria-pressed', String(selected));
   });
 
   // Update static elements with data-i18n
@@ -810,25 +827,15 @@ function setLang(lang) {
 // ═══════════════════════════════════════════════
 const state = { draft: null, report: null, obd: null }
 
-function setCurrentReport(report) {
+function setCurrentReport(report, files = []) {
   state.report?.photos.forEach(url => URL.revokeObjectURL(url))
+  report.storageToken = globalThis.crypto?.randomUUID?.() ?? String(Date.now())
   state.report = report
+  if (saveCurrentReport()) saveReportPhotos(report, files)
 }
 
-// ═══════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════
-function goTo(page) {
-  if (page !== 'analyzing') state.draft = null
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
-  document.getElementById('page-' + page).classList.add('active')
-  if (page === 'compare') renderComparison()
-  window.scrollTo(0, 0)
-}
-
-function toggleMobile() {
-  const m = document.getElementById('navMobile')
-  m.classList.toggle('open')
+function apiUrl(path) {
+  return path + '?lang=' + currentLang
 }
 
 // ═══════════════════════════════════════════════
@@ -847,11 +854,11 @@ function createUploadZone(containerId) {
       <div class="photo-guide" id="${containerId}-guide"></div>
       <p class="hint" id="${containerId}-next" aria-live="polite"></p>
       <div class="drop" id="${containerId}-drop">
-        <strong>${t('uploadTitle')}</strong>
-        <p>${t('uploadSub')}</p>
+        <strong id="${containerId}-upload-label">${t('uploadTitle')}</strong>
+        <p id="${containerId}-upload-hint">${t('uploadSub')}</p>
         <input type="file" id="${containerId}-input" hidden multiple accept="image/jpeg,image/png,image/webp"/>
       </div>
-      <div id="${containerId}-errbox" class="err" style="display:none;margin-top:6px"></div>
+      <div id="${containerId}-errbox" class="err" role="alert" style="display:none;margin-top:6px"></div>
       <ul class="thumbs editable" id="${containerId}-thumbs"></ul>
     `
     el.innerHTML = html
@@ -888,6 +895,8 @@ function createUploadZone(containerId) {
     })
     drop.setAttribute('tabindex', '0')
     drop.setAttribute('role', 'button')
+    drop.setAttribute('aria-labelledby', cid + '-upload-label')
+    drop.setAttribute('aria-describedby', cid + '-upload-hint ' + cid + '-errbox')
 
     drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over') })
     drop.addEventListener('dragleave', () => drop.classList.remove('over'))
@@ -902,11 +911,11 @@ function createUploadZone(containerId) {
     const problems = []
     const store = photoStores[cid]
     Array.from(files).forEach(f => {
-      if (!['image/jpeg','image/png','image/webp'].includes(f.type)) { problems.push(`${f.name}: JPG, PNG, WEBP`); return }
-      if (f.size > 8 * 1024 * 1024) { problems.push(`${f.name} > 8 MB`); return }
-      if (store.length >= 10) { problems.push('Max 10 photos'); return }
+      if (!['image/jpeg','image/png','image/webp'].includes(f.type)) { problems.push(`${f.name} · ${t('uploadWrongType')}`); return }
+      if (f.size > 8 * 1024 * 1024) { problems.push(`${f.name} · ${t('uploadTooLarge')}`); return }
+      if (store.length >= 10) { problems.push(t('uploadTooMany')); return }
       if (store.reduce((total, photo) => total + photo.file.size, f.size) > 12 * 1024 * 1024) {
-        problems.push('Max 12 MB total'); return
+        problems.push(t('uploadTotal')); return
       }
       const id = cid + '-' + Date.now() + '-' + Math.random()
       store.push({ id, file: f, url: URL.createObjectURL(f), view })
@@ -961,6 +970,8 @@ function showErr(id, msg) {
   const el = document.getElementById(id)
   el.textContent = msg
   el.style.display = msg ? 'block' : 'none'
+  const input = document.querySelector(`[aria-describedby="${id}"]`)
+  if (input) input.setAttribute('aria-invalid', String(Boolean(msg)))
 }
 
 // ═══════════════════════════════════════════════
@@ -1015,10 +1026,10 @@ async function decodeVinFromApi() {
   btn.textContent = t('decodeVinLoading')
 
   try {
-    const res = await fetch('/api/vin/' + encodeURIComponent(vin))
+    const res = await fetch(apiUrl('/api/vin/' + encodeURIComponent(vin)))
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      throw new Error(data.error || 'Сервер вернул ошибку')
+      throw new Error(data.error || t('serverConnErr'))
     }
     const data = await res.json()
     if (vin !== normalizeVin(vinInput.value)) return
@@ -1035,7 +1046,7 @@ async function decodeVinFromApi() {
 
   } catch (err) {
     if (vin !== normalizeVin(vinInput.value)) return
-    statusEl.textContent = err.message || 'Ошибка при декодировании VIN'
+    statusEl.textContent = err.message || t('serverConnErr')
     statusEl.style.color = 'var(--red)'
   } finally {
     btn.disabled = false
@@ -1092,7 +1103,7 @@ async function startAnalysis() {
     renderStages(0)
     document.getElementById('analyzeBar').style.width = '15%'
 
-    const fetchPromise = fetch('/api/analyze', { method: 'POST', body: fd })
+    const fetchPromise = fetch(apiUrl('/api/analyze'), { method: 'POST', body: fd })
       .then(response => ({ response }), error => ({ error }))
     await delay(600)
     if (draft !== state.draft) return
@@ -1113,14 +1124,15 @@ async function startAnalysis() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      throw new Error(data.error || `Server error (${response.status})`)
+      throw new Error(data.error || t('serverConnErr'))
     }
 
     const report = await response.json()
     if (draft !== state.draft) return
-    report.photos = fd.getAll('photos').map(file => URL.createObjectURL(file))
+    const files = fd.getAll('photos')
+    report.photos = files.map(file => URL.createObjectURL(file))
     report.submittedViews = submittedViews
-    setCurrentReport(report)
+    setCurrentReport(report, files)
 
     document.getElementById('analyzeBar').style.width = '100%'
     renderStages(4)
@@ -1158,7 +1170,9 @@ function specRows(rows) {
   ).join('')
 }
 
-function scoreColor(s) { return s >= 80 ? 'var(--green)' : s >= 70 ? 'var(--amb)' : 'var(--red)' }
+function scoreColor(score) {
+  return { Low: 'var(--green)', Moderate: 'var(--amb)', High: 'var(--red)' }[riskForScore(score)]
+}
 
 function scoreSVG(score) {
   const r = 62, c = 2 * Math.PI * r
@@ -1183,7 +1197,15 @@ function renderReport() {
   if (r.isExample) Object.assign(r, localizedCamryExample())
   const { make, model, year } = r.vehicle
   const title = [year, make, model].filter(Boolean).join(' ') || t('vehInfo')
-  const pinLeft = Math.min(95, Math.max(5, 100 - r.score))
+  const risk = riskForScore(r.score)
+  const photoStatus = r.isExample ? 'success' : r.photoStatus
+  const photoMessage = t('photo_' + photoStatus)
+  const recommendationRows = r.isExample ? r.recs.slice(1) : r.recs
+  const langIndex = ['ru', 'kz', 'en'].indexOf(currentLang)
+  const specRowsForLanguage = r.specs.map(([label, value, key]) => [SPEC_LABELS[key]?.[langIndex] ?? label, value])
+  const created = new Intl.DateTimeFormat(document.documentElement.lang, {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  }).format(new Date(r.generatedAt))
   const infoRows = [
     ['VIN', r.vin || t('vinNotProvided'), r.isExample ? t('sampleVin') : ''],
     ...(r.city ? [[t('reportCity'), r.city]] : []),
@@ -1203,8 +1225,8 @@ function renderReport() {
           ${chip(d.severity)}
         </div>`).join('')
     : r.photoAnalyzed ? `<p class="hint">${t('noVisibleDamage')}</p>`
-    : r.hasPhotos ? `<p class="hint">${t('photoUnavailable')}</p>`
-    : `<p class="hint">${t('noPhotosText')} <a onclick="continueWithPhotos()">${t('runWithPhotos')}</a></p>`
+    : r.hasPhotos ? `<p class="hint">${photoMessage}</p>`
+    : `<p class="hint">${photoMessage} <button type="button" class="link-button" onclick="continueWithPhotos()">${t('runWithPhotos')}</button></p>`
 
   document.getElementById('reportContent').innerHTML = `
     <div class="rhead">
@@ -1213,7 +1235,7 @@ function renderReport() {
         <code>${escapeHtml(r.vin || t('vinNotProvided'))}</code>
         ${r.city ? `<p class="hint">${escapeHtml(r.city)}</p>` : ''}
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div class="report-actions" style="display:flex;gap:10px;flex-wrap:wrap">
         ${r.isExample ? `<button type="button" class="btn"
           onclick="document.getElementById('compareForm').requestSubmit();document.getElementById('compareSaveStatus').scrollIntoView({block:'center'})">${t('compareSave')}</button>` : ''}
         <button class="btn ghost" onclick="newInspection()">${t('btnNewInsp')}</button>
@@ -1222,16 +1244,18 @@ function renderReport() {
     </div>
 
     ${r.isExample ? `<div class="demo-banner">${t('sampleBanner')}</div>` : ''}
+    <p class="hint print-only">${t('reportLimitations')}</p>
+    <p class="hint" id="reportStorageWarning" role="status">${r.storageWarning ? t(r.storageWarning) : ''}</p>
 
     <div class="cols2">
-      ${r.hasPhotos ? `<div class="card center2">
+      ${risk ? `<div class="card center2">
         <h3 style="margin-bottom:16px">${t('overallCond')}</h3>
-        ${Number.isFinite(r.score) ? scoreSVG(r.score) : `<p>${t('photoUnavailable')}</p>`}
+        ${scoreSVG(r.score)}
       </div>
       <div class="card">
-        <h3>${t('riskTitle')} &nbsp;${chip(r.risk)}</h3>
-        ${r.risk ? `<div class="meter"><div class="meter-pin" style="left:${pinLeft}%"></div></div>
-        <p>${escapeHtml(r.recs[0])}</p>` : '<p>—</p>'}
+        <h3>${t('riskTitle')} &nbsp;${chip(risk)}</h3>
+        <div class="meter" aria-hidden="true"><div class="meter-pin" style="left:${100 - r.score}%;--pin-color:${scoreColor(r.score)}"></div></div>
+        <p>${r.isExample ? escapeHtml(r.recs[0]) : t('risk' + risk)}</p>
       </div>` : ''}
       <div class="card">
         <h3>${t('vehInfo')}</h3>
@@ -1239,19 +1263,20 @@ function renderReport() {
       </div>
       ${r.specs.length ? `<div class="card">
         <h3>${t('specsTitle')}</h3>
-        ${specRows(r.specs)}
+        ${specRows(specRowsForLanguage)}
       </div>` : ''}
     </div>
 
-    ${r.vin ? `
     <div class="card" style="margin-top:18px">
       <h3>${t('historyTitle')}</h3>
       ${r.history.length ? specRows(r.history) : `<p class="hint">${t('historyUnavailable')}</p>`}
-    </div>` : ''}
+    </div>
 
     <div class="card" style="margin-top:18px">
       <h3>${t('visualTitle')}</h3>
       ${r.hasPhotos ? photoCoverage(r) : ''}
+      ${photoStatus === 'success' && !r.isExample ? `<p class="hint">${photoMessage}</p>` : ''}
+      ${photoStatus === 'success' && !r.isExample && r.language !== currentLang ? `<p class="hint">${t('originalLanguage')}</p>` : ''}
       ${photosHtml}
       ${damagesHtml}
     </div>
@@ -1259,15 +1284,15 @@ function renderReport() {
     ${r.blindSpots?.length ? `<section class="card tool-card"><h3>${t('blindSpotsTitle')}</h3>${resultList(r.blindSpots)}</section>` : ''}
     ${repairEstimateHtml(r)}
 
-    ${r.recs.length > (r.risk ? 1 : 0) ? `<div class="card" style="margin-top:18px">
+    ${recommendationRows.length ? `<div class="card" style="margin-top:18px">
       <h3>${t('recsTitle')}</h3>
-      ${resultList(r.recs.slice(r.risk ? 1 : 0))}
+      ${resultList(recommendationRows)}
     </div>` : ''}
 
     ${r.obd.length ? `<section class="card tool-card"><h3>${t('obdLabel')}</h3>${obdResultsHtml(r.obd)}</section>` : ''}
     <section id="reportChecklist" class="card tool-card"></section>
     ${compareForm(r)}
-    ${r.generatedAt ? `<p style="color:var(--mut);font-size:.82rem;margin-top:20px;text-align:center">${t('generatedAtText')} ${escapeHtml(r.generatedAt)}</p>` : ''}
+    <p style="color:var(--mut);font-size:.82rem;margin-top:20px;text-align:center">${t('generatedAtText')} <time datetime="${escapeHtml(r.generatedAt)}">${escapeHtml(created)}</time></p>
   `
   refreshChecklists()
   bindCompareForm()
@@ -1370,15 +1395,27 @@ function renderObdResult(results) {
   resultEl.style.display = 'block'
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('inspYear').max = new Date().getFullYear() + 1
-  createUploadZone('heroUpload')
-  createUploadZone('inspUpload')
-  setLang('ru')
-})
 </script>
 <script src="/inspection-tools.js"></script>
 <script src="/report-example.js"></script>
+<script src="/audit-copy.js"></script>
+<script src="/report-storage.js"></script>
+<script src="/site-navigation.js"></script>
+<script type="module">
+import * as reportDomain from '/report-domain.mjs'
+Object.assign(window, reportDomain)
+document.getElementById('inspYear').max = new Date().getFullYear() + 1
+createUploadZone('heroUpload')
+createUploadZone('inspUpload')
+let language = 'ru'
+try {
+  const storedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY)
+  if (Object.hasOwn(I18N, storedLanguage)) language = storedLanguage
+} catch {}
+restoreSavedReport()
+setLang(language)
+syncRoute()
+</script>
 </body>
 </html>
 

@@ -15,8 +15,11 @@ import path from 'path';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
-import { findDTC } from './obd-diagnostics.js';
+import { localObdResult } from './obd-localization.js';
 import { decodeVin } from './vin-decoder.js';
+import { apiError, LANGUAGES, localized } from './localization.js';
+import { preparePhotos, providerStatus } from './photo-analysis.js';
+import { riskForScore, SPEC_LABELS } from '../client/report-domain.mjs';
 
 // ── paths ──
 const __filename = fileURLToPath(import.meta.url);
@@ -31,6 +34,12 @@ const PORT = process.env.PORT || 8080;
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-3.8-flash';
 
 app.use(cors());
+app.use('/api', (req, res, next) => {
+  const lang = req.query.lang ?? 'ru';
+  if (typeof lang !== 'string' || !Object.hasOwn(LANGUAGES, lang)) return apiError(res, 400, 'language');
+  res.locals.language = lang;
+  next();
+});
 app.use(express.json());
 
 // Serve the client (../client)
@@ -40,12 +49,6 @@ app.use(express.static(path.join(__dirname, '..', 'client')));
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024, files: 10, fields: 5, fieldSize: 512 },
-  fileFilter(_req, file, cb) {
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
-      return cb(Object.assign(new Error('Photos must be JPEG, PNG or WebP.'), { status: 415 }));
-    }
-    cb(null, true);
-  },
 });
 
 // ═══════════════════════════════════════════════
@@ -53,27 +56,27 @@ const upload = multer({
 // ═══════════════════════════════════════════════
 
 function validateVin(vin) {
-  if (!vin) return 'Enter the 17-character VIN.';
-  if (vin.length !== 17) return `A VIN has 17 characters. You entered ${vin.length}.`;
-  if (/[IOQ]/i.test(vin)) return 'A VIN never contains the letters I, O or Q.';
-  if (!/^[A-HJ-NPR-Z0-9]+$/i.test(vin)) return 'VIN must contain only valid characters (no I, O, Q).';
-  return '';
+  return /^[A-HJ-NPR-Z0-9]{17}$/.test(vin);
 }
 
 // ═══════════════════════════════════════════════
 //  GEMINI AI INTEGRATION
 // ═══════════════════════════════════════════════
 let aiInstance = null;
+let lastPhotoCheck = null;
 
 function isKeyConfigured() {
   const k = process.env.GEMINI_API_KEY?.trim();
-  return !!(k && k !== 'your_gemini_api_key_here' && k !== 'твой_скопированный_ключ_сюда');
+  return Boolean(k && k !== 'your_gemini_api_key_here' && k !== 'твой_скопированный_ключ_сюда');
 }
 
 function getAI() {
   if (!isKeyConfigured()) return null;
   if (!aiInstance) {
-    aiInstance = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY.trim(), httpOptions: { timeout: 25000 } });
+    aiInstance = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY.trim(),
+      httpOptions: { timeout: 25000, retryOptions: { attempts: 1 } },
+    });
   }
   return aiInstance;
 }
@@ -84,8 +87,14 @@ async function generateJson(client, contents) {
     contents,
     config: { responseMimeType: 'application/json' },
   });
+  const finishReason = response.candidates?.[0]?.finishReason;
+  if (finishReason && finishReason !== 'STOP') {
+    throw Object.assign(new Error('Incomplete model response'), { code: 'invalid_response' });
+  }
   const data = JSON.parse(response.text ?? 'null');
-  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Invalid Gemini response.');
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw Object.assign(new Error('Unexpected model response'), { code: 'invalid_response' });
+  }
   return data;
 }
 
@@ -98,9 +107,9 @@ const OBD_SYSTEMS = { P: 'Powertrain', C: 'Chassis', B: 'Body', U: 'Network' };
 const OBD_PRIORITY = { High: 3, Medium: 2, Low: 1 };
 
 // ── Analyze photos with Gemini Vision ──
-async function analyzePhotosWithGemini(photos) {
-  const client = getAI();
-  if (!client || photos.length === 0) return null;
+async function analyzePhotosWithGemini(photos, lang) {
+  if (photos.length === 0) return { status: 'not_requested' };
+  if (!isKeyConfigured()) return { status: 'not_configured' };
 
   const contents = [];
 
@@ -116,7 +125,8 @@ async function analyzePhotosWithGemini(photos) {
 
   // Text prompt
   contents.push(
-    `You are a professional vehicle inspector. Analyze these car photos and identify any visible damage, wear, or concerns.
+    `You are a professional vehicle inspector. Analyze these photos and identify visible damage, wear, or concerns.
+Write all free-text fields in ${LANGUAGES[lang]}. Keep the JSON keys, severity and view identifiers unchanged.
 
 For each issue found, provide:
 - part: the car part affected (e.g. "Front bumper", "Hood", "Rear left door")
@@ -138,36 +148,50 @@ Respond ONLY with valid JSON in this exact format (no markdown fences):
 }`
   );
 
-  const data = await generateJson(client, contents);
-  if (!Array.isArray(data.damages) || !Number.isFinite(data.overallScore) ||
-      data.overallScore < 0 || data.overallScore > 100) return null;
-  return {
-    damages: data.damages.filter(d => isText(d?.part) && isText(d?.issue) &&
-      ['Low', 'Medium', 'High'].includes(d.severity)),
-    overallScore: Math.round(data.overallScore),
-    assessedViews: [...new Set(textList(data.assessedViews).filter(view => PHOTO_VIEWS.includes(view)))],
-    recommendations: textList(data.recommendations),
-  };
+  try {
+    const data = await generateJson(getAI(), contents);
+    const assessedViews = [...new Set(textList(data.assessedViews).filter(view => PHOTO_VIEWS.includes(view)))];
+    if (data.overallScore === null) {
+      lastPhotoCheck = { status: 'operational', checkedAt: new Date().toISOString() };
+      return { status: 'vehicle_not_visible' };
+    }
+    if (!Array.isArray(data.damages) || !Array.isArray(data.recommendations) ||
+        !riskForScore(data.overallScore) || !assessedViews.length) {
+      throw Object.assign(new Error('Unexpected photo response'), { code: 'invalid_response' });
+    }
+    lastPhotoCheck = { status: 'operational', checkedAt: new Date().toISOString() };
+    return {
+      status: 'success',
+      damages: data.damages.filter(d => isText(d?.part) && isText(d?.issue) &&
+        ['Low', 'Medium', 'High'].includes(d.severity)),
+      overallScore: Math.trunc(data.overallScore),
+      assessedViews,
+      recommendations: textList(data.recommendations),
+    };
+  } catch (err) {
+    const status = providerStatus(err);
+    lastPhotoCheck = { status, checkedAt: new Date().toISOString() };
+    console.warn('Gemini photo analysis:', status);
+    return { status };
+  }
 }
 
-function specsFromVin({ basic, engine, manufacturing }) {
+function specsFromVin({ basic, engine, manufacturing }, lang) {
   return [
-    ['Engine displacement (L)', engine?.displacementL],
-    ['Cylinders', engine?.engineCylinders],
-    ['Engine power (hp)', engine?.engineHP],
-    ['Fuel type', engine?.fuelTypePrimary],
-    ['Transmission', engine?.transmissionStyle],
-    ['Drivetrain', basic.driveType],
-    ['Body type', basic.bodyClass],
-    ['Assembly country', manufacturing?.plantCountry],
-  ].filter(([, value]) => value != null && value !== '');
+    ['displacement', engine?.displacementL],
+    ['cylinders', engine?.engineCylinders],
+    ['power', engine?.engineHP],
+    ['fuel', engine?.fuelTypePrimary],
+    ['transmission', engine?.transmissionStyle],
+    ['drivetrain', basic.driveType],
+    ['body', basic.bodyClass],
+    ['country', manufacturing?.plantCountry],
+    ['engine', engine?.name],
+  ].filter(([, value]) => value != null && value !== '')
+    .map(([key, value]) => [localized(SPEC_LABELS[key], lang), value, key]);
 }
 
-const RISK_ADVICE = {
-  Low:      'The photos suggest a low risk of visible damage. Confirm the condition in person.',
-  Moderate: 'The photos suggest moderate condition concerns. Inspect the flagged areas before buying.',
-  High:     'The photos suggest significant condition concerns. Arrange an inspection with a qualified mechanic.',
-};
+const autodevKey = () => process.env.AUTODEV_API_KEY?.trim();
 
 // ═══════════════════════════════════════════════
 //  ROUTES
@@ -180,9 +204,15 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     mode: live ? 'live' : 'demo',
     message: live
-      ? 'Gemini API key configured'
-      : 'Set GEMINI_API_KEY in server/.env to enable AI photo analysis',
-    vinDecode: 'vpic-wmi',
+      ? 'Gemini is configured. See gemini.status for the last photo check.'
+      : 'Set GEMINI_API_KEY in the server environment to enable photo analysis.',
+    gemini: {
+      configured: live,
+      model: GEMINI_MODEL,
+      status: live ? lastPhotoCheck?.status ?? 'not_checked' : 'not_configured',
+      checkedAt: live ? lastPhotoCheck?.checkedAt ?? null : null,
+    },
+    vinDecode: autodevKey() ? 'vpic-autodev-wmi' : 'vpic-wmi',
   });
 });
 
@@ -195,34 +225,31 @@ app.post('/api/analyze', upload.array('photos', 10), async (req, res) => {
 
     if ([rawVin, inputMake, inputModel, inputYear, obdCodes].some(value => typeof value !== 'string' || value.length > 160) ||
         inputMake.length > 120 || inputModel.length > 120) {
-      return res.status(400).json({ error: 'Invalid vehicle fields.' });
+      return apiError(res, 400, 'fields');
     }
     const vin = rawVin.trim().toUpperCase();
-    const vinErr = vin ? validateVin(vin) : '';
-    if (vinErr) return res.status(400).json({ error: vinErr });
+    if (vin && !validateVin(vin)) return apiError(res, 400, 'vin');
     const codes = [...new Set(obdCodes.toUpperCase().split(/[\s,;]+/).filter(Boolean))];
     if (codes.length > 10 || codes.some(code => !OBD_FORMAT.test(code))) {
-      return res.status(400).json({ error: 'Enter up to 10 valid OBD-II codes (e.g. P0300).' });
+      return apiError(res, 400, 'obd');
     }
     if (!vin && !photos.length && !codes.length) {
-      return res.status(400).json({ error: 'Add a VIN, at least one photo, or an OBD-II code.' });
+      return apiError(res, 400, 'evidence');
     }
 
     // Validate year
     if (inputYear && !validYear(inputYear)) {
-      const maxY = new Date().getFullYear() + 1;
-      return res.status(400).json({ error: `Enter a year from 1980 to ${maxY}.` });
+      return apiError(res, 400, 'year');
     }
     if (photos.reduce((total, photo) => total + photo.size, 0) > 12 * 1024 * 1024) {
-      return res.status(413).json({ error: 'Photos must total 12 MB or less.' });
+      return apiError(res, 413, 'photo_total');
     }
+    const prepared = await preparePhotos(photos);
+    const lang = res.locals.language;
     const [decoded, photoResult, obd] = await Promise.all([
-      vin ? decodeVin(vin) : { basic: {}, fieldSources: {} },
-      analyzePhotosWithGemini(photos).catch(err => {
-        console.error('Gemini photo analysis failed:', err.message);
-        return null;
-      }),
-      codes.length ? lookupObdCodes(codes) : [],
+      vin ? decodeVin(vin, { apiKey: autodevKey() }) : { basic: {}, fieldSources: {} },
+      analyzePhotosWithGemini(prepared, lang),
+      codes.length ? lookupObdCodes(codes, lang) : [],
     ]);
     const manual = { make: inputMake.trim(), model: inputModel.trim(), year: inputYear };
     const vehicle = {};
@@ -236,48 +263,46 @@ app.post('/api/analyze', upload.array('photos', 10), async (req, res) => {
     }
 
     const score = photoResult?.overallScore ?? null;
-    const risk = score === null ? null : score >= 80 ? 'Low' : score >= 70 ? 'Moderate' : 'High';
-    const recs = [
-      ...(risk ? [RISK_ADVICE[risk]] : []),
-      ...(photoResult?.recommendations ?? []),
-    ];
+    const risk = riskForScore(score);
 
     res.json({
       id: vin || randomUUID(),
       vin,
       vehicle,
       vehicleSources,
-      specs: specsFromVin(decoded),
+      language: lang,
+      specs: specsFromVin(decoded, lang),
       history: [],
       score,
       risk,
       damages: photoResult?.damages ?? [],
-      recs,
+      recs: photoResult.recommendations ?? [],
       obd,
       isDemo: false,
       hasPhotos: photos.length > 0,
-      photoAnalyzed: Boolean(photoResult),
+      photoAnalyzed: photoResult.status === 'success',
+      photoStatus: photoResult.status,
       assessedViews: photoResult?.assessedViews ?? [],
-      generatedAt: new Date().toLocaleString(),
+      generatedAt: new Date().toISOString(),
     });
   } catch (err) {
-    console.error('Analysis error:', err);
-    res.status(500).json({ error: 'Internal server error. Please try again.' });
+    if (err.code === 'invalid_image') return apiError(res, err.status, err.code);
+    console.error('Analysis failed');
+    return apiError(res, 500, 'unavailable');
   }
 });
 
-async function lookupObdCodes(codes) {
+async function lookupObdCodes(codes, lang) {
   const results = new Map();
   for (const code of codes) {
-    const local = findDTC(code);
-    if (local) results.set(code, { ...local, isDemo: false, source: 'local' });
+    const local = localObdResult(code, lang);
+    if (local) results.set(code, local);
   }
 
-  const client = getAI();
   const missing = codes.filter(code => !results.has(code));
-  if (client && missing.length) {
+  if (isKeyConfigured() && missing.length) {
     try {
-      const data = await generateJson(client, `Explain these OBD-II codes in Russian: ${missing.join(', ')}.
+      const data = await generateJson(getAI(), `Explain these OBD-II codes in ${LANGUAGES[lang]}: ${missing.join(', ')}.
 Return {"results": [{"code":"P0300","description":"...","cause":["..."],"severity":"Low|Medium|High","recommendations":["..."]}]}.
 Omit codes you cannot interpret reliably without manufacturer-specific information. Describe possible causes and diagnostic checks.`);
       const rows = Array.isArray(data.results) ? data.results : [];
@@ -292,10 +317,11 @@ Omit codes you cannot interpret reliably without manufacturer-specific informati
           recommendations: textList(row.recommendations),
           isDemo: false,
           source: 'gemini',
+          language: lang,
         });
       }
     } catch (err) {
-      console.error('Gemini OBD analysis failed:', err.message);
+      console.warn('Gemini OBD analysis:', providerStatus(err));
     }
   }
 
@@ -310,21 +336,21 @@ app.post('/api/analyze-obd', async (req, res) => {
     const batch = Object.hasOwn(req.body ?? {}, 'codes');
     const input = batch ? req.body.codes : [req.body?.code];
     if (!Array.isArray(input) || input.length < 1 || input.length > 10) {
-      return res.status(400).json({ error: 'Send between 1 and 10 OBD-II codes.' });
+      return apiError(res, 400, 'obd');
     }
     const codes = [...new Set(input.map(code => typeof code === 'string' ? code.trim().toUpperCase() : ''))];
     if (codes.some(code => !OBD_FORMAT.test(code))) {
-      return res.status(400).json({ error: 'Enter valid OBD-II codes (e.g. P0300).' });
+      return apiError(res, 400, 'obd');
     }
-    const results = await lookupObdCodes(codes);
+    const results = await lookupObdCodes(codes, res.locals.language);
     if (batch) return res.json({ results });
     if (results[0].source === 'unavailable') {
-      return res.status(isKeyConfigured() ? 502 : 404).json({ error: 'No diagnostic information is available for this code.' });
+      return apiError(res, isKeyConfigured() ? 502 : 404, 'obd_missing');
     }
     res.json(results[0]);
   } catch (err) {
-    console.error('OBD analysis error:', err);
-    res.status(500).json({ error: 'Failed to analyze OBD code.' });
+    console.error('OBD analysis failed');
+    return apiError(res, 500, 'unavailable');
   }
 });
 
@@ -332,32 +358,33 @@ app.post('/api/analyze-obd', async (req, res) => {
 app.get('/api/vin/:vin', async (req, res) => {
   try {
     const vin = req.params.vin.trim().toUpperCase();
-    const vinErr = validateVin(vin);
-    if (vinErr) return res.status(400).json({ error: vinErr });
+    if (!validateVin(vin)) return apiError(res, 400, 'vin');
 
-    res.json(await decodeVin(vin));
+    res.json(await decodeVin(vin, { apiKey: autodevKey() }));
   } catch (err) {
-    console.error('VIN decode error:', err.message);
-    res.status(502).json({ error: 'VIN decoding failed. Please try again.' });
+    console.error('VIN lookup failed');
+    return apiError(res, 502, 'unavailable');
   }
 });
 
 // ── API fallback and request errors ──
-app.use('/api', (_req, res) => res.status(404).json({ error: 'API endpoint not found.' }));
+app.use('/api', (_req, res) => apiError(res, 404, 'not_found'));
 
 app.use((err, _req, res, next) => {
   if (res.headersSent) return next(err);
   if (err instanceof multer.MulterError) {
-    return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ error: err.message });
+    if (err.code === 'LIMIT_FILE_SIZE') return apiError(res, 413, 'photo_size');
+    if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') return apiError(res, 400, 'photo_count');
+    return apiError(res, 400, 'request');
   }
   if (err.status >= 400 && err.status < 500) {
-    return res.status(err.status).json({ error: err.type === 'entity.parse.failed' ? 'Invalid JSON body.' : err.message });
+    return apiError(res, err.status, 'request');
   }
   if (/^Multipart:|^Unexpected end of (form|file)/.test(err.message)) {
-    return res.status(400).json({ error: 'Invalid multipart body.' });
+    return apiError(res, 400, 'request');
   }
-  console.error('Request error:', err.message);
-  return res.status(500).json({ error: 'Internal server error.' });
+  console.error('Request failed');
+  return apiError(res, 500, 'unavailable');
 });
 
 // ── SPA fallback ──
@@ -366,10 +393,10 @@ app.get('*', (_req, res) => {
 });
 
 // ── Start ──
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   const live = isKeyConfigured();
   console.log(`
-KolikCheck.AI server running at http://localhost:${PORT}
+KolikCheck.AI server running at http://localhost:${server.address().port}
 Mode: ${live ? 'LIVE (Gemini API key configured)' : 'DEMO (set GEMINI_API_KEY in server/.env for AI analysis)'} | VIN decoder: NHTSA vPIC + WMI`
   );
 });
