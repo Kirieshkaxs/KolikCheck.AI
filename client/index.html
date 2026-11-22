@@ -143,6 +143,21 @@ textarea{resize:vertical}
 /* ── report ── */
 .rhead{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:20px}
 .rhead code{color:var(--green);letter-spacing:.06em;font-size:.95rem}
+.report-actions{display:flex;gap:10px;flex-wrap:wrap}
+.report-back{margin:0 0 12px;padding:4px 0}
+.example-report .rhead{align-items:center}
+.example-report .rhead h1{overflow-wrap:anywhere}
+.example-report .report-meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;color:var(--mut);font-size:.9rem}
+.example-report .report-actions{align-items:center}
+.example-report .report-actions .link-button{padding:6px 2px;color:var(--mut)}
+.example-report .report-actions .link-button:hover{color:var(--tx)}
+.example-report .demo-banner{margin-bottom:16px}
+.example-status{margin:0 0 12px;color:var(--green);font-size:.9rem}
+.example-status:empty,#reportStorageWarning:empty{display:none}
+.sample-assessment{display:grid;grid-column:1/-1;grid-template-columns:minmax(112px,1fr) minmax(0,2fr);gap:18px;align-items:center}
+.sample-assessment .score-ring svg{width:min(130px,100%);height:auto}
+.sample-assessment .h-score{font-size:.87rem}
+.sample-assessment h3{overflow-wrap:anywhere}
 .demo-banner{background:#ffb84d14;border:1px solid #ffb84d55;color:var(--amb);padding:12px 16px;border-radius:12px;font-size:.88rem;margin-bottom:22px}
 .cols2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .center2{text-align:center}
@@ -186,6 +201,12 @@ textarea{resize:vertical}
   .footer-contacts{flex-direction:column}
   .repair-row{grid-template-columns:repeat(2,minmax(0,1fr))}
   .repair-row>strong{grid-column:1/-1}
+  .example-report{padding-top:32px}
+  .example-report .report-actions{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
+  .example-report .report-actions .btn{grid-column:1/-1}
+  .example-report .report-actions .link-button{font-size:.82rem}
+  .sample-assessment{grid-template-columns:minmax(0,104px) minmax(0,1fr);gap:12px;padding:14px}
+  .sample-assessment h3,.sample-assessment p{font-size:.87rem}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .print-only{display:none}
@@ -237,6 +258,7 @@ textarea{resize:vertical}
 .ka-btn-loading::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border:3px solid var(--line);border-top-color:#fff;border-radius:50%;animation:ka-spin .9s linear infinite}
 
 .page{animation:ka-bounceIn .55s ease both}
+#page-report{animation:none}
 
 .ka-toast{position:fixed;top:120px;right:18px;z-index:1000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
 .ka-toast-item{background:var(--card);border:1px solid var(--line);color:var(--tx);padding:12px 16px;border-radius:12px;box-shadow:0 16px 40px #000b;min-width:250px;animation:ka-toastIn .45s ease both;pointer-events:auto;display:flex;align-items:center;gap:10px;font-size:.95rem}
@@ -414,6 +436,7 @@ textarea{resize:vertical}
 <!-- ══ PAGE: REPORT ══ -->
 <div class="page" id="page-report">
   <main class="wrap sec" id="reportContent">
+    <button type="button" class="link-button report-back" onclick="backFromReport()">← <span data-i18n="reportBack">Назад</span></button>
     <div class="center" style="min-height:40vh">
       <div class="card" style="text-align:center;max-width:420px">
         <div style="font-size:2rem;margin-bottom:12px">📋</div>
@@ -1228,35 +1251,38 @@ function renderReport() {
     : r.hasPhotos ? `<p class="hint">${photoMessage}</p>`
     : `<p class="hint">${photoMessage} <button type="button" class="link-button" onclick="continueWithPhotos()">${t('runWithPhotos')}</button></p>`
 
-  document.getElementById('reportContent').innerHTML = `
+  const scoreMarkup = risk ? `<h3>${t('overallCond')}</h3>${scoreSVG(r.score)}` : ''
+  const riskMarkup = risk ? `<h3>${t(r.isExample ? 'sampleRiskTitle' : 'riskTitle')} &nbsp;${chip(risk)}</h3>
+    <div class="meter" aria-hidden="true"><div class="meter-pin" style="left:${100 - r.score}%;--pin-color:${scoreColor(r.score)}"></div></div>
+    <p>${r.isExample ? escapeHtml(r.recs[0]) : t('risk' + risk)}</p>` : ''
+  const content = document.getElementById('reportContent')
+  content.classList.toggle('example-report', Boolean(r.isExample))
+  content.innerHTML = `
+    <button type="button" class="link-button report-back" onclick="backFromReport()">← ${t('reportBack')}</button>
     <div class="rhead">
       <div>
         <h1 style="font-size:clamp(1.8rem,4vw,2.4rem);margin-bottom:6px">${escapeHtml(title)}</h1>
-        <code>${escapeHtml(r.vin || t('vinNotProvided'))}</code>
-        ${r.city ? `<p class="hint">${escapeHtml(r.city)}</p>` : ''}
+        <div class="report-meta">
+          <code>${escapeHtml(r.vin || t('vinNotProvided'))}</code>
+          ${r.city ? `<span>${escapeHtml(r.city)}</span>` : ''}
+        </div>
       </div>
-      <div class="report-actions" style="display:flex;gap:10px;flex-wrap:wrap">
-        ${r.isExample ? `<button type="button" class="btn"
-          onclick="document.getElementById('compareForm').requestSubmit();document.getElementById('compareSaveStatus').scrollIntoView({block:'center'})">${t('compareSave')}</button>` : ''}
-        <button class="btn ghost" onclick="newInspection()">${t('btnNewInsp')}</button>
-        <button class="btn" onclick="window.print()">${t('btnPdf')}</button>
+      <div class="report-actions">
+        ${r.isExample ? `<button type="submit" class="btn sm" form="compareForm">${t('compareSave')}</button>` : ''}
+        <button type="button" class="${r.isExample ? 'link-button' : 'btn ghost'}" onclick="newInspection()">${t('btnNewInsp')}</button>
+        <button type="button" class="${r.isExample ? 'link-button' : 'btn'}" onclick="window.print()">${t('btnPdf')}</button>
       </div>
     </div>
 
+    ${r.isExample ? '<p class="example-status" id="exampleCompareStatus" role="status"></p>' : ''}
     ${r.isExample ? `<div class="demo-banner">${t('sampleBanner')}</div>` : ''}
     <p class="hint print-only">${t('reportLimitations')}</p>
     <p class="hint" id="reportStorageWarning" role="status">${r.storageWarning ? t(r.storageWarning) : ''}</p>
 
     <div class="cols2">
-      ${risk ? `<div class="card center2">
-        <h3 style="margin-bottom:16px">${t('overallCond')}</h3>
-        ${scoreSVG(r.score)}
-      </div>
-      <div class="card">
-        <h3>${t('riskTitle')} &nbsp;${chip(risk)}</h3>
-        <div class="meter" aria-hidden="true"><div class="meter-pin" style="left:${100 - r.score}%;--pin-color:${scoreColor(r.score)}"></div></div>
-        <p>${r.isExample ? escapeHtml(r.recs[0]) : t('risk' + risk)}</p>
-      </div>` : ''}
+      ${risk ? (r.isExample
+        ? `<section class="card sample-assessment"><div class="center2">${scoreMarkup}</div><div>${riskMarkup}</div></section>`
+        : `<div class="card center2">${scoreMarkup}</div><div class="card">${riskMarkup}</div>`) : ''}
       <div class="card">
         <h3>${t('vehInfo')}</h3>
         ${specRows(infoRows)}

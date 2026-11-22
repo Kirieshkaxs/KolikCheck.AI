@@ -1,5 +1,6 @@
 const AUDIT_COPY = {
   ru: {
+    reportBack: 'Назад',
     btnPdf: 'Печать / сохранить PDF',
     historyUnavailable: 'Источник истории автомобиля не подключён.',
     reportLimitations: 'Выводы основаны на предоставленных данных. Отчёт не заменяет очную диагностику на СТО.',
@@ -27,6 +28,7 @@ const AUDIT_COPY = {
     menuLabel: 'Меню',
   },
   kz: {
+    reportBack: 'Артқа',
     btnPdf: 'Басып шығару / PDF сақтау',
     historyUnavailable: 'Көлік тарихының дереккөзі қосылмаған.',
     reportLimitations: 'Қорытындылар берілген деректерге негізделген. Есеп автосервистегі көзбе-көз диагностиканы алмастырмайды.',
@@ -54,6 +56,7 @@ const AUDIT_COPY = {
     menuLabel: 'Мәзір',
   },
   en: {
+    reportBack: 'Back',
     btnPdf: 'Print / save as PDF',
     historyUnavailable: 'No vehicle history source is connected.',
     reportLimitations: 'Findings are based on the evidence provided. This report does not replace an in-person inspection at a repair shop.',

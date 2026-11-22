@@ -2,6 +2,7 @@ const EXAMPLE_ID = 'example-camry-70'
 const CAMRY_COPY = {
   ru: {
     sampleButton: 'Посмотреть пример отчёта (Camry 70)',
+    sampleRiskTitle: 'Риск по фото',
     sampleBanner: 'Демонстрационный отчёт. VIN, наблюдения и цены приведены для примера.',
     sampleVin: 'Условный VIN', reportCity: 'Город', vinNotProvided: 'VIN не указан',
     evidenceRequired: 'Добавьте хотя бы одно фото, код OBD-II или VIN.',
@@ -27,7 +28,7 @@ const CAMRY_COPY = {
         ['Слишком бедная смесь (банк 1).', 'Подсос воздуха или недостаточная подача топлива.', 'Проверить герметичность впуска и топливные коррекции.'],
       ],
       advice: [
-        'Состояние требует внимания. Сверьте предположения по фото с результатами осмотра.',
+        'Проверьте замечания по фото при осмотре.',
         'Возьмите смету СТО на переговоры и обсудите скидку, если работы подтвердятся.',
       ],
       specs: [['Двигатель', '2,5 л, бензин'], ['Коробка передач', 'Автоматическая']],
@@ -35,6 +36,7 @@ const CAMRY_COPY = {
   },
   kz: {
     sampleButton: 'Есеп үлгісін көру (Camry 70)',
+    sampleRiskTitle: 'Фото бойынша қауіп',
     sampleBanner: 'Демо есеп. VIN, бақылау нәтижелері және бағалар мысал ретінде берілген.',
     sampleVin: 'Шартты VIN', reportCity: 'Қала', vinNotProvided: 'VIN көрсетілмеген',
     evidenceRequired: 'Кемінде бір фото, OBD-II коды немесе VIN қосыңыз.',
@@ -60,7 +62,7 @@ const CAMRY_COPY = {
         ['Отын қоспасы тым жұтаң (1-банк).', 'Артық ауаның кіруі немесе отынның жеткіліксіз берілуі.', 'Ауа кіретін жүйенің герметикалығын және отын түзетулерін тексеріңіз.'],
       ],
       advice: [
-        'Көліктің күйіне назар аударыңыз. Фотодағы белгілерді көзбе-көз тексеріңіз.',
+        'Фотодағы белгілерді көзбе-көз тексеріңіз.',
         'Жөндеу қажеттігі расталса, автосервис сметасын көрсетіп, жеңілдік туралы сөйлесіңіз.',
       ],
       specs: [['Қозғалтқыш', '2,5 л, бензин'], ['Беріліс қорабы', 'Автоматты']],
@@ -68,6 +70,7 @@ const CAMRY_COPY = {
   },
   en: {
     sampleButton: 'View sample report (Camry 70)',
+    sampleRiskTitle: 'Risk from photos',
     sampleBanner: 'Sample report. The VIN, findings and prices are illustrative.',
     sampleVin: 'Sample VIN', reportCity: 'City', vinNotProvided: 'VIN not provided',
     evidenceRequired: 'Add at least one photo, an OBD-II code, or a VIN.',
@@ -93,7 +96,7 @@ const CAMRY_COPY = {
         ['Fuel mixture too lean (bank 1).', 'Unmetered intake air or insufficient fuel supply.', 'Check for intake leaks and review fuel-trim readings.'],
       ],
       advice: [
-        'The visible condition warrants a closer look. Confirm the photo findings during an in-person inspection.',
+        'Confirm the photo findings in person.',
         'Bring the shop estimate to the negotiation and discuss a discount if the work is confirmed.',
       ],
       specs: [['Engine', '2.5 L petrol'], ['Transmission', 'Automatic']],

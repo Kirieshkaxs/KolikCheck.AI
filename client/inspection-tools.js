@@ -326,21 +326,22 @@ function bindCompareForm() {
   const form = document.getElementById('compareForm')
   const report = state.report
   const details = () => Object.fromEntries(new FormData(form))
+  const statuses = [document.getElementById('compareSaveStatus'), document.getElementById('exampleCompareStatus')].filter(Boolean)
+  const setStatus = key => statuses.forEach(status => { status.textContent = t(key) })
   form.oninput = () => { report.comparisonDraft = details(); saveCurrentReport() }
   form.onsubmit = event => {
     event.preventDefault()
-    const status = document.getElementById('compareSaveStatus')
     const values = details()
     const valid = Object.values(values).every(value => value === '' ||
       (/^\d+$/.test(value) && Number.isSafeInteger(Number(value))))
     if (!valid) {
-      status.textContent = t('wholeNumbers')
+      setStatus('wholeNumbers')
       return
     }
     const vehicles = savedVehicles()
     const position = vehicles.findIndex(row => row.id === report.id)
     if (position === -1 && vehicles.length >= 3) {
-      status.textContent = t('compareFull')
+      setStatus('compareFull')
       return
     }
     const estimate = repairTotals(report.repairCosts)
@@ -356,9 +357,9 @@ function bindCompareForm() {
     else vehicles[position] = snapshot
     try {
       localStorage.setItem(COMPARE_KEY, JSON.stringify(vehicles))
-      status.textContent = t('compareSaved')
+      setStatus('compareSaved')
     } catch {
-      status.textContent = t('storageError')
+      setStatus('storageError')
     }
   }
 }

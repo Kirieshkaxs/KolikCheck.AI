@@ -33,11 +33,23 @@ function goTo(route) {
     return
   }
   if (location.hash !== '#' + route) {
-    const method = activeRoute === 'analyzing' ? 'replaceState' : 'pushState'
+    const replacing = activeRoute === 'analyzing'
+    const method = replacing ? 'replaceState' : 'pushState'
+    const previousRoute = replacing ? history.state?.previousRoute : activeRoute
     // Keep the inspection form as the Back destination after analysis.
-    history[method](null, '', '#' + route)
+    history[method]({ previousRoute }, '', '#' + route)
   }
   showRoute(route)
+}
+
+function backFromReport() {
+  const previousRoute = history.state?.previousRoute
+  if (previousRoute && previousRoute !== 'report' && previousRoute !== 'analyzing') {
+    history.back()
+    return
+  }
+  history.replaceState(null, '', '#home')
+  showRoute('home')
 }
 
 function syncRoute() {
