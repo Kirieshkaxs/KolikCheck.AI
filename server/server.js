@@ -12,6 +12,7 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 import { findDTC } from './obd-diagnostics.js';
@@ -38,7 +39,7 @@ app.use(express.static(path.join(__dirname, '..', 'client')));
 // ── multer — in-memory photo uploads ──
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024, files: 10, fields: 4, fieldSize: 512 },
+  limits: { fileSize: 8 * 1024 * 1024, files: 10, fields: 5, fieldSize: 512 },
   fileFilter(_req, file, cb) {
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
       return cb(Object.assign(new Error('Photos must be JPEG, PNG or WebP.'), { status: 415 }));
@@ -162,32 +163,6 @@ function specsFromVin({ basic, engine, manufacturing }) {
   ].filter(([, value]) => value != null && value !== '');
 }
 
-// ═══════════════════════════════════════════════
-//  DEMO / FALLBACK DATA
-// ═══════════════════════════════════════════════
-const DEMO_SPECS = [
-  ['Engine', '2.5 L, 4-cylinder petrol'],
-  ['Transmission', '8-speed automatic'],
-  ['Drivetrain', 'All-wheel drive'],
-  ['Body type', 'Sedan'],
-  ['Estimated mileage', '87 000 km'],
-];
-const DEMO_DAMAGES = [
-  { part: 'Front bumper', issue: 'Light scratches and paint chips', severity: 'Low' },
-  { part: 'Rear left door', issue: 'Paint tone differs from nearby panels — possible repaint', severity: 'Medium' },
-  { part: 'Windshield', issue: 'Small chip, lower right corner', severity: 'Low' },
-];
-const DEMO_HISTORY = [
-  ['Registration', 'Kazakhstan, 2 previous owners'],
-  ['Theft / wanted check', 'No record found'],
-  ['Reported accidents', '1 minor incident (2021)'],
-];
-const DEMO_RECS = [
-  'Ask the seller for service records and compare the mileage.',
-  'Have a mechanic inspect the rear left door for body filler or repaint.',
-  'Take a test drive and listen for noise from the engine and gearbox.',
-  'Confirm the VIN plate on the car matches the VIN on the documents.',
-];
 const RISK_ADVICE = {
   Low:      'The photos suggest a low risk of visible damage. Confirm the condition in person.',
   Moderate: 'The photos suggest moderate condition concerns. Inspect the flagged areas before buying.',
@@ -206,7 +181,7 @@ app.get('/api/health', (_req, res) => {
     mode: live ? 'live' : 'demo',
     message: live
       ? 'Gemini API key configured'
-      : 'Running in demo mode — set GEMINI_API_KEY in server/.env to enable AI analysis',
+      : 'Set GEMINI_API_KEY in server/.env to enable AI photo analysis',
     vinDecode: 'vpic-wmi',
   });
 });
@@ -214,15 +189,24 @@ app.get('/api/health', (_req, res) => {
 // ── Main analysis ──
 app.post('/api/analyze', upload.array('photos', 10), async (req, res) => {
   try {
-    const { vin: rawVin, make: inputMake = '', model: inputModel = '', year: inputYear = '' } = req.body ?? {};
+    const { vin: rawVin = '', make: inputMake = '', model: inputModel = '', year: inputYear = '',
+      obdCodes = '' } = req.body ?? {};
     const photos = req.files || [];
 
-    if ([inputMake, inputModel, inputYear].some(value => typeof value !== 'string' || value.length > 120)) {
+    if ([rawVin, inputMake, inputModel, inputYear, obdCodes].some(value => typeof value !== 'string' || value.length > 160) ||
+        inputMake.length > 120 || inputModel.length > 120) {
       return res.status(400).json({ error: 'Invalid vehicle fields.' });
     }
-    const vin = typeof rawVin === 'string' ? rawVin.trim().toUpperCase() : '';
-    const vinErr = validateVin(vin);
+    const vin = rawVin.trim().toUpperCase();
+    const vinErr = vin ? validateVin(vin) : '';
     if (vinErr) return res.status(400).json({ error: vinErr });
+    const codes = [...new Set(obdCodes.toUpperCase().split(/[\s,;]+/).filter(Boolean))];
+    if (codes.length > 10 || codes.some(code => !OBD_FORMAT.test(code))) {
+      return res.status(400).json({ error: 'Enter up to 10 valid OBD-II codes (e.g. P0300).' });
+    }
+    if (!vin && !photos.length && !codes.length) {
+      return res.status(400).json({ error: 'Add a VIN, at least one photo, or an OBD-II code.' });
+    }
 
     // Validate year
     if (inputYear && !validYear(inputYear)) {
@@ -232,14 +216,13 @@ app.post('/api/analyze', upload.array('photos', 10), async (req, res) => {
     if (photos.reduce((total, photo) => total + photo.size, 0) > 12 * 1024 * 1024) {
       return res.status(413).json({ error: 'Photos must total 12 MB or less.' });
     }
-    const isDemo = !isKeyConfigured();
-
-    const [decoded, photoResult] = await Promise.all([
-      decodeVin(vin),
+    const [decoded, photoResult, obd] = await Promise.all([
+      vin ? decodeVin(vin) : { basic: {}, fieldSources: {} },
       analyzePhotosWithGemini(photos).catch(err => {
         console.error('Gemini photo analysis failed:', err.message);
         return null;
       }),
+      codes.length ? lookupObdCodes(codes) : [],
     ]);
     const manual = { make: inputMake.trim(), model: inputModel.trim(), year: inputYear };
     const vehicle = {};
@@ -252,30 +235,26 @@ app.post('/api/analyze', upload.array('photos', 10), async (req, res) => {
       }
     }
 
-    const vinSpecs = specsFromVin(decoded);
-    const specsAreDemo = isDemo && vinSpecs.length === 0;
-    const specs = specsAreDemo ? DEMO_SPECS : vinSpecs;
-    const damages = isDemo && photos.length ? DEMO_DAMAGES : (photoResult?.damages ?? []);
-    const score = isDemo ? 75 : (photoResult?.overallScore ?? null);
+    const score = photoResult?.overallScore ?? null;
     const risk = score === null ? null : score >= 80 ? 'Low' : score >= 70 ? 'Moderate' : 'High';
     const recs = [
       ...(risk ? [RISK_ADVICE[risk]] : []),
-      ...(isDemo ? DEMO_RECS : (photoResult?.recommendations ?? [])),
+      ...(photoResult?.recommendations ?? []),
     ];
-    const history = isDemo ? DEMO_HISTORY : [];
 
     res.json({
+      id: vin || randomUUID(),
       vin,
       vehicle,
       vehicleSources,
-      specs,
-      specsAreDemo,
-      history,
+      specs: specsFromVin(decoded),
+      history: [],
       score,
       risk,
-      damages,
+      damages: photoResult?.damages ?? [],
       recs,
-      isDemo,
+      obd,
+      isDemo: false,
       hasPhotos: photos.length > 0,
       photoAnalyzed: Boolean(photoResult),
       assessedViews: photoResult?.assessedViews ?? [],

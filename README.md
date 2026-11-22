@@ -41,8 +41,10 @@ Buying a used car can involve hidden body damage, unreliable mileage claims, and
 3. **Multi-code OBD-II lookup.** Enter up to 10 codes separated by spaces, commas, semicolons, or newlines. Results group the codes by system and suggest a check order based on severity. To include the codes in a report, enter them on the inspection form.
 4. **In-person checklist.** Track the VIN and document check, cold start, test drive, and lift inspection. The checklist is saved per VIN and is available on the inspection form and the report.
 5. **Vehicle comparison.** Enter the seller’s asking price in tenge and the stated mileage in the report, then choose **Save for comparison**. Open **Compare** to see up to three vehicles side by side by price, mileage, photo findings, and OBD-II codes. Saving the same VIN updates its entry. The comparison stores report details in the current browser, excluding photos.
+6. **Camry 70 sample report.** Open it from the home page without entering vehicle data or calling external APIs. The fictional 2019 Almaty case includes a 68/100 photo score, two defects, unchecked areas, two OBD-II codes, and an illustrative repair estimate. It can be saved for comparison.
+7. **Repair estimate in tenge.** Enter a shop quote or price range for each listed defect. The report totals the entered amounts, and you can save the total alongside the report in the comparison.
 
-Use the browser’s print dialog from the report to save a PDF.
+Both inspection forms accept a VIN, listing photos, OBD-II codes, or any combination of those inputs. A report based only on scanner codes has no photo rating. Use the browser’s print dialog from the report to save a PDF.
 
 ---
 
@@ -67,7 +69,7 @@ npm start
 
 In PowerShell, use `Copy-Item .env.example server/.env` for step 3. The server reads `server/.env` regardless of the working directory. Set `PORT` there or in the environment to change the port.
 
-Without a key, the report shows a labeled sample photo assessment. VIN lookup, known OBD-II codes, the checklist, and comparison are available without Gemini. If Gemini fails while a key is configured, the report still shows the available VIN data and indicates that the photo assessment is unavailable.
+The Camry example, VIN lookup, known OBD-II codes, checklist, and comparison are available without Gemini. If the photo assessment is unavailable, the report still shows the information it could retrieve.
 
 For Google Cloud Run, run `powershell -ExecutionPolicy Bypass -File deploy-cloud-run.ps1`. The script uses the Google Cloud CLI and Cloud Build and deploys a public service.
 
@@ -78,7 +80,8 @@ For Google Cloud Run, run `powershell -ExecutionPolicy Bypass -File deploy-cloud
 KolikCheck.AI/
 ├── client/
 │   ├── index.html          # SPA — inspection, reporting, OBD-II and comparison views
-│   └── inspection-tools.js # Photo coverage, checklist, batch OBD-II, comparison
+│   ├── inspection-tools.js # Photo coverage, checklist, batch OBD-II, comparison
+│   └── report-example.js   # Local Camry example and repair estimate calculator
 ├── server/
 │   ├── server.js          # Express API (analyze, analyze-obd, health)
 │   ├── obd-diagnostics.js # Local OBD-II reference
@@ -100,7 +103,7 @@ KolikCheck.AI/
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/analyze` | Accepts multipart fields `vin`, optional `make`, `model`, `year`, and repeated `photos`. Returns vehicle fields with `vehicleSources` and the assessed photo views in `assessedViews` |
+| `POST` | `/api/analyze` | Accepts multipart fields `vin`, `make`, `model`, `year`, `obdCodes` (separated by spaces, commas, semicolons or newlines), and repeated `photos`. Requires at least one of `vin`, `photos`, or `obdCodes`. Returns vehicle fields with `vehicleSources`, assessed photo views in `assessedViews`, and code results in `obd` |
 | `POST` | `/api/analyze-obd` | Accepts `{ "codes": ["P0300", "P0420"] }` and returns `{ "results": [...] }` with a source per code. The original `{ "code": "P0300" }` format returns one result object |
 | `GET` | `/api/vin/:vin` | Returns `basic` vehicle fields, `fieldSources`, and `isPartial`. Reports missing fields as a partial result |
 | `GET` | `/api/health` | Server availability and configured mode (`live` or `demo`) |
@@ -117,7 +120,7 @@ Photo uploads accept JPEG, PNG, and WebP, with a maximum of 10 files, 8 MiB per 
 
 ## 🛡️ Responsible AI & Compliance (`AI-CARD`)
 * **Data handling.** The server sends VINs to NHTSA vPIC for lookup and keeps uploaded photos in memory for the request. With a Gemini key configured, it sends photos and codes missing from the local reference to Gemini. Checklists and comparison entries stay in browser storage. Keep API keys in server-side environment variables.
-* **Coverage.** Registration, ownership, theft, and accident records appear only as examples in demo reports. Live reports depend on the supplied data and can contain incomplete or incorrect AI estimates. Confirm findings with vehicle documents and an in-person inspection.
+* **Coverage.** Reports cover the submitted evidence. Confirm findings with vehicle documents and an in-person inspection. The sample repair costs are illustrative. Real report totals use the prices entered by the user.
 
 ---
 

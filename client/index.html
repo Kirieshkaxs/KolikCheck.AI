@@ -71,6 +71,7 @@ nav.top .wrap{display:flex;align-items:center;justify-content:space-between;heig
 .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:72px 20px 48px}
 h1{font-size:clamp(2.4rem,6vw,4rem);line-height:1.05;letter-spacing:-.03em;margin-bottom:18px}
 .lead{font-size:1.1rem;color:var(--mut);margin-bottom:28px;max-width:500px}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 h2{font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;margin-bottom:24px}
 h3{font-size:1.05rem;margin-bottom:10px}
 
@@ -117,6 +118,8 @@ input.invalid{border-color:var(--red)!important}
 .obd-group{margin-top:16px}
 .obd-entry{padding:10px 0;border-top:1px solid var(--line)}
 .obd-heading{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.repair-row{display:grid;grid-template-columns:1fr minmax(100px, 160px) minmax(100px, 160px);align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.repair-total{margin-top:12px;font-weight:700}
 .comparison-scroll{overflow-x:auto}
 .comparison{width:100%;border-collapse:collapse;text-align:left}
 .comparison th,.comparison td{padding:12px;vertical-align:top;border-bottom:1px solid var(--line)}
@@ -169,6 +172,8 @@ footer strong{color:var(--tx)}
 @media(max-width:700px){
   .burger{display:block}.nav-links{display:none}
   .cols2,.row3{grid-template-columns:1fr}
+  .repair-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .repair-row>strong{grid-column:1/-1}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{.comparison-editor{display:none}}
@@ -248,17 +253,26 @@ footer strong{color:var(--tx)}
   <section class="hero wrap">
     <div>
       <h1 data-i18n="heroTitle">Покупай с умом.<br>Води уверенно.</h1>
-      <p class="lead" data-i18n="heroLead">KolikCheck.AI проверяет VIN-код и фотографии автомобиля, находит скрытые дефекты и риски еще до встречи с продавцом.</p>
-      <button class="btn" onclick="goTo('inspect')" data-i18n="heroCta">Проверить авто →</button>
+      <p class="lead" data-i18n="heroLead">VIN не обязателен. Проверьте автомобиль по фото из объявления на Kolesa.kz или по кодам сканера, даже если продавец скрыл VIN.</p>
+      <div class="hero-actions">
+        <button type="button" class="btn" onclick="goTo('inspect')" data-i18n="heroCta">Проверить авто →</button>
+        <button type="button" class="btn ghost" onclick="openCamryExample()" data-i18n="sampleButton">Посмотреть пример отчёта (Camry 70)</button>
+      </div>
     </div>
     <div class="card">
       <div class="field">
-        <label for="heroVin" data-i18n="labelVin">VIN-код авто</label>
+        <label for="heroVin" data-i18n="labelVinOptional">VIN (необязательно)</label>
         <input type="text" id="heroVin" maxlength="20" data-i18n-placeholder="vinPlaceholderHero" oninput="this.value=this.value.toUpperCase()" />
         <div class="err" id="heroVinErr" style="display:none"></div>
       </div>
       <div id="heroUpload"></div>
+      <div class="field tool-card">
+        <label for="heroObd" data-i18n="inspectObd">Коды OBD-II (необязательно)</label>
+        <textarea id="heroObd" rows="1" maxlength="160" placeholder="P0300, P0420"></textarea>
+        <div class="err" id="heroObdErr" style="display:none"></div>
+      </div>
       <button class="btn full" onclick="heroSubmit()" data-i18n="btnAnalyze">Анализировать авто</button>
+      <div class="err" id="heroEvidenceErr" role="alert" style="display:none"></div>
       <p class="hint"><span data-i18n="hintMore">Нужны подробные параметры?</span> <a onclick="goTo('inspect')" data-i18n="hintFullForm">Открыть полную форму</a></p>
     </div>
   </section>
@@ -268,7 +282,7 @@ footer strong{color:var(--tx)}
     <div class="grid4">
       <div class="card"><div class="ico">🔎</div><h3 data-i18n="feat1Title">VIN Декодер</h3><p data-i18n="feat1Desc">Марка, модель, год выпуска и заводские характеристики прямо из 17-значного VIN.</p></div>
       <div class="card"><div class="ico">📷</div><h3 data-i18n="feat2Title">AI Осмотр кузова</h3><p data-i18n="feat2Desc">Загрузите фото — нейросеть выявит перекрасы, сколы, зазоры и дефекты деталей.</p></div>
-      <div class="card"><div class="ico">📋</div><h3 data-i18n="feat3Title">Отчёт об осмотре</h3><p data-i18n="feat3Desc">Оценка видимого состояния и рекомендации перед покупкой.</p></div>
+      <div class="card"><div class="ico">₸</div><h3 data-i18n="feat3Title">Смета ремонта для торга</h3><p data-i18n="feat3Desc">Введите цены СТО по найденным дефектам и получите общую смету в тенге для разговора с продавцом.</p></div>
       <div class="card"><div class="ico">⚠️</div><h3 data-i18n="feat4Title">Оценка рисков AI</h3><p data-i18n="feat4Desc">Понятный индекс состояния и список конкретных рекомендаций перед сделкой.</p></div>
     </div>
   </section>
@@ -276,9 +290,9 @@ footer strong{color:var(--tx)}
   <section class="sec wrap" id="how">
     <h2 data-i18n="howHeading">Как это работает</h2>
     <div class="grid4" style="max-width:860px">
-      <div class="card"><div class="num">1</div><h3 data-i18n="how1Title">Введите VIN</h3><p data-i18n="how1Desc">Укажите 17-значный VIN-код автомобиля или техпаспорта.</p></div>
-      <div class="card"><div class="num">2</div><h3 data-i18n="how2Title">Добавьте фото</h3><p data-i18n="how2Desc">Прикрепите четкие фото кузова, салона или моторного отсека.</p></div>
-      <div class="card"><div class="num">3</div><h3 data-i18n="how3Title">Получите отчет</h3><p data-i18n="how3Desc">Изучите индекс состояния, скрытые повреждения и советы эксперта.</p></div>
+      <div class="card"><div class="num">1</div><h3 data-i18n="how1Title">Добавьте фото или коды</h3><p data-i18n="how1Desc">Подойдут фото из объявления и коды с OBD-II сканера.</p></div>
+      <div class="card"><div class="num">2</div><h3 data-i18n="how2Title">Укажите VIN, если он есть</h3><p data-i18n="how2Desc">VIN помогает уточнить марку, модель и год выпуска.</p></div>
+      <div class="card"><div class="num">3</div><h3 data-i18n="how3Title">Получите отчёт</h3><p data-i18n="how3Desc">Посмотрите видимые дефекты и посчитайте смету для торга.</p></div>
     </div>
   </section>
 
@@ -289,10 +303,10 @@ footer strong{color:var(--tx)}
 <div class="page" id="page-inspect">
   <main class="wrap sec" style="max-width:660px">
     <h1 style="font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:8px" data-i18n="inspHeading">Проверка автомобиля</h1>
-    <p class="lead" style="margin-bottom:28px" data-i18n="inspLead">Введите VIN и добавьте фотографии. Марка, модель и год опциональны.</p>
+    <p class="lead" style="margin-bottom:28px" data-i18n="inspLead">Если продавец скрыл VIN, добавьте только фото из объявления или только коды OBD-II со сканера.</p>
     <div class="card">
       <div class="field">
-        <label for="inspVin" data-i18n="labelVinReq">VIN (обязательно)</label>
+        <label for="inspVin" data-i18n="labelVinOptional">VIN (необязательно)</label>
         <input type="text" id="inspVin" maxlength="20" data-i18n-placeholder="vinPlaceholderInsp" oninput="this.value=this.value.toUpperCase()" />
         <button type="button" class="btn sm" onclick="decodeVinFromApi()" id="btnDecodeVin" style="margin-left:8px;padding:6px 14px;font-size:.85rem" data-i18n="btnDecodeVin">Расшифровать VIN</button>
         <div class="err" id="inspVinErr" style="display:none"></div>
@@ -318,6 +332,7 @@ footer strong{color:var(--tx)}
         <div id="inspObdErr" class="err" style="display:none"></div>
       </div>
       <button class="btn full" onclick="inspSubmit()" data-i18n="btnAnalyze">Анализировать авто</button>
+      <div class="err" id="inspEvidenceErr" role="alert" style="display:none"></div>
     </div>
     <section id="inspectChecklist" class="card tool-card"></section>
   </main>
@@ -401,10 +416,9 @@ const I18N = {
     navReport: "Отчет",
     navObd: "OBD-II ошибки",
     heroTitle: "Покупай с умом.<br>Води уверенно.",
-    heroLead: "KolikCheck.AI проверяет VIN-код и фотографии автомобиля, находит скрытые дефекты и риски еще до встречи с продавцом.",
+    heroLead: "VIN не обязателен. Проверьте автомобиль по фото из объявления на Kolesa.kz или по кодам сканера, даже если продавец скрыл VIN.",
     heroCta: "Проверить авто →",
-    labelVin: "VIN-код авто",
-    labelVinReq: "VIN (обязательно)",
+    labelVinOptional: "VIN (необязательно)",
     labelBrand: "Марка",
     labelModel: "Модель",
     labelYear: "Год",
@@ -417,20 +431,20 @@ const I18N = {
     feat1Desc: "Марка, модель, год выпуска и заводские характеристики прямо из 17-значного VIN.",
     feat2Title: "AI Осмотр кузова",
     feat2Desc: "Загрузите фото — нейросеть выявит перекрасы, сколы, зазоры и дефекты деталей.",
-    feat3Title: "Отчёт об осмотре",
-    feat3Desc: "Оценка видимого состояния и рекомендации перед покупкой.",
+    feat3Title: "Смета ремонта для торга",
+    feat3Desc: "Введите цены СТО по найденным дефектам и получите общую смету в тенге для разговора с продавцом.",
     feat4Title: "Оценка рисков AI",
     feat4Desc: "Понятный индекс состояния и список конкретных рекомендаций перед сделкой.",
     howHeading: "Как это работает",
-    how1Title: "Введите VIN",
-    how1Desc: "Укажите 17-значный VIN-код автомобиля или техпаспорта.",
-    how2Title: "Добавьте фото",
-    how2Desc: "Прикрепите четкие фото кузова, салона или моторного отсека.",
-    how3Title: "Получите отчет",
-    how3Desc: "Изучите индекс состояния, скрытые повреждения и советы эксперта.",
+    how1Title: "Добавьте фото или коды",
+    how1Desc: "Подойдут фото из объявления и коды с OBD-II сканера.",
+    how2Title: "Укажите VIN, если он есть",
+    how2Desc: "VIN помогает уточнить марку, модель и год выпуска.",
+    how3Title: "Получите отчёт",
+    how3Desc: "Посмотрите видимые дефекты и посчитайте смету для торга.",
     footerTagline: "Знай, что покупаешь.",
     inspHeading: "Проверка автомобиля",
-    inspLead: "Введите VIN и добавьте фотографии. Марка, модель и год опциональны.",
+    inspLead: "Если продавец скрыл VIN, добавьте только фото из объявления или только коды OBD-II со сканера.",
     analyzingTitle: "Анализ автомобиля...",
     btnEdit: "Изменить данные",
     btnRetry: "Повторить",
@@ -440,9 +454,9 @@ const I18N = {
     uploadTitle: "Добавьте фото автомобиля",
     uploadSub: "Перетащите файлы или нажмите для выбора. JPG, PNG или WEBP, до 8 МБ.",
     stages: [
-      "Проверка формата VIN",
-      "Декодирование и сбор характеристик",
-      "Компьютерное зрение и анализ кузова",
+      "Приём данных",
+      "Проверка предоставленных сведений",
+      "Сбор результатов",
       "Формирование итогового отчета"
     ],
     vinErrRequired: "Введите 17-значный VIN.",
@@ -495,10 +509,9 @@ const I18N = {
     navReport: "Есеп",
     navObd: "OBD-II коды",
     heroTitle: "Ақылмен таңда.<br>Сеніммен айда.",
-    heroLead: "KolikCheck.AI көліктің VIN-коды мен фотосуреттерін тексеріп, жасырын ақаулар мен қауіптерді сатушымен кездесуге дейін анықтайды.",
+    heroLead: "VIN міндетті емес. Сатушы VIN-ді жасырса да, көлікті Kolesa.kz хабарландыруындағы фото немесе сканер кодтары бойынша тексеріңіз.",
     heroCta: "Көлікті тексеру →",
-    labelVin: "Көліктің VIN-коды",
-    labelVinReq: "VIN (міндетті)",
+    labelVinOptional: "VIN (міндетті емес)",
     labelBrand: "Маркасы",
     labelModel: "Моделі",
     labelYear: "Жылы",
@@ -511,20 +524,20 @@ const I18N = {
     feat1Desc: "17 таңбалы VIN арқылы шыққан жылы, маркасы және зауыттық сипаттамалары.",
     feat2Title: "AI Шанақты тексеру",
     feat2Desc: "Фото жүктеңіз — жасанды интеллект сырылған, боялған және зақымдалған жерлерін табады.",
-    feat3Title: "Тексеру есебі",
-    feat3Desc: "Көліктің сыртқы күйін бағалау және сатып алу алдындағы ұсыныстар.",
+    feat3Title: "Саудаласуға арналған жөндеу сметасы",
+    feat3Desc: "Анықталған ақаулар бойынша автосервис бағаларын енгізіп, сатушымен талқылауға арналған жалпы сметаны теңгемен есептеңіз.",
     feat4Title: "AI Қауіп деңгейі",
     feat4Desc: "Көліктің жалпы жағдайының нақты индексі және сатып алушыға кеңестер.",
     howHeading: "Қалай жұмыс істейді",
-    how1Title: "VIN енгізіңіз",
-    how1Desc: "Көліктің немесе құжаттың 17 таңбалы VIN-кодын жазыңыз.",
-    how2Title: "Фото қосыңыз",
-    how2Desc: "Шанақтың, салонның немесе қозғалтқыштың сапалы суреттерін жүктеңіз.",
+    how1Title: "Фото немесе кодтарды қосыңыз",
+    how1Desc: "Хабарландыру фотолары және OBD-II сканерінің кодтары жарайды.",
+    how2Title: "Бар болса, VIN енгізіңіз",
+    how2Desc: "VIN көліктің маркасын, моделін және жылын анықтауға көмектеседі.",
     how3Title: "Есеп алыңыз",
-    how3Desc: "Жағдай бағасын, жасырын кемшіліктер мен сарапшы ұсыныстарын көріңіз.",
+    how3Desc: "Көрінетін ақауларды қарап, саудаласу үшін жөндеу сметасын есептеңіз.",
     footerTagline: "Не сатып алып жатқаныңызды біліңіз.",
     inspHeading: "Көлікті тексеру",
-    inspLead: "VIN енгізіп, фотосуреттерді қосыңыз. Маркасы, моделі және жылы қосымша.",
+    inspLead: "Сатушы VIN-ді жасырса, хабарландырудағы фотоларды немесе OBD-II сканерінің кодтарын ғана қосыңыз.",
     analyzingTitle: "Көлік талдануда...",
     btnEdit: "Деректерді өзгерту",
     btnRetry: "Қайта көру",
@@ -534,9 +547,9 @@ const I18N = {
     uploadTitle: "Көлік суреттерін жүктеңіз",
     uploadSub: "Файлдарды сүйреп тастаңыз немесе таңдаңыз. JPG, PNG немесе WEBP, 8 МБ дейін.",
     stages: [
-      "VIN пішімін тексеру",
-      "Сипаттамаларды жинақтау",
-      "Компьютерлік көру арқылы шанақты зерттеу",
+      "Деректерді қабылдау",
+      "Берілген ақпаратты тексеру",
+      "Нәтижелерді жинау",
       "Қорытынды есеп дайындау"
     ],
     vinErrRequired: "17 таңбалы VIN енгізіңіз.",
@@ -589,10 +602,9 @@ const I18N = {
     navReport: "Latest report",
     navObd: "OBD-II Codes",
     heroTitle: "Buy smarter.<br>Drive safer.",
-    heroLead: "KolikCheck.AI checks a used car's VIN and photos, then shows you its condition, hidden risks and what to ask the seller before you pay.",
+    heroLead: "VIN is optional. Check a car using photos from a Kolesa.kz listing or scanner codes, even if the seller keeps the VIN private.",
     heroCta: "Inspect a car →",
-    labelVin: "Vehicle VIN",
-    labelVinReq: "VIN (required)",
+    labelVinOptional: "VIN (optional)",
     labelBrand: "Brand",
     labelModel: "Model",
     labelYear: "Year",
@@ -605,20 +617,20 @@ const I18N = {
     feat1Desc: "Read the make, model year and factory specifications encoded in the 17-character VIN.",
     feat2Title: "AI Visual Inspection",
     feat2Desc: "Upload photos and get visible damage flagged panel by panel before you meet the seller.",
-    feat3Title: "Inspection report",
-    feat3Desc: "Review the vehicle’s visible condition and get pre-purchase recommendations.",
+    feat3Title: "Repair estimate for negotiation",
+    feat3Desc: "Enter shop quotes for the defects found and get a total in tenge to discuss with the seller.",
     feat4Title: "AI Risk Assessment",
     feat4Desc: "Get a clear risk level and an overall condition score so you know exactly where you stand.",
     howHeading: "How it works",
-    how1Title: "Enter the VIN",
-    how1Desc: "Type the 17-character VIN from the car or its documents.",
-    how2Title: "Add photos",
-    how2Desc: "Upload clear photos of the body, interior and engine bay.",
+    how1Title: "Add photos or codes",
+    how1Desc: "Use listing photos or codes from an OBD-II scanner.",
+    how2Title: "Add the VIN if available",
+    how2Desc: "A VIN helps identify the make, model and model year.",
     how3Title: "Read your report",
-    how3Desc: "Review the condition score, risks and what to check before buying.",
+    how3Desc: "Review visible defects and build a repair estimate for negotiation.",
     footerTagline: "Know what you're buying.",
     inspHeading: "Inspect a vehicle",
-    inspLead: "Enter the VIN and add photos. Brand, model and year are optional.",
+    inspLead: "If the seller keeps the VIN private, submit listing photos or OBD-II scanner codes on their own.",
     analyzingTitle: "Analyzing your vehicle",
     btnEdit: "Edit details",
     btnRetry: "Try again",
@@ -628,9 +640,9 @@ const I18N = {
     uploadTitle: "Add car photos",
     uploadSub: "Drag & drop or click to choose. JPG, PNG or WEBP, max 8 MB each.",
     stages: [
-      "Validating VIN",
-      "Processing vehicle information",
-      "Analyzing uploaded images",
+      "Receiving your submission",
+      "Checking the information provided",
+      "Collecting results",
       "Preparing vehicle report"
     ],
     vinErrRequired: "Enter the 17-character VIN.",
@@ -731,6 +743,11 @@ function setLang(lang) {
 // STATE
 // ═══════════════════════════════════════════════
 const state = { draft: null, report: null, obd: null }
+
+function setCurrentReport(report) {
+  state.report?.photos.forEach(url => URL.revokeObjectURL(url))
+  state.report = report
+}
 
 // ═══════════════════════════════════════════════
 // NAVIGATION
@@ -884,35 +901,26 @@ function showErr(id, msg) {
 // FORM SUBMIT
 // ═══════════════════════════════════════════════
 function heroSubmit() {
-  const vin = document.getElementById('heroVin').value
-  const msg = validateVin(vin)
-  showErr('heroVinErr', msg)
-  if (msg) return
-  state.draft = { vin: normalizeVin(vin), make: '', model: '', year: '', photos: photoStores['heroUpload'] || [] }
-  goTo('analyzing')
-  startAnalysis()
+  submitInspection('hero')
 }
 
 function inspSubmit() {
-  const vin = document.getElementById('inspVin').value
-  const yearInput = document.getElementById('inspYear').value
-  const makeInput = document.getElementById('inspMake').value.trim()
-  const modelInput = document.getElementById('inspModel').value.trim()
-  const obd = parseObdCodes(document.getElementById('inspObd').value)
-  const vinMsg = validateVin(vin)
-  const yearMsg = validateYear(yearInput)
-  showErr('inspVinErr', vinMsg)
-  showErr('inspYearErr', yearMsg)
-  showErr('inspObdErr', obd.error)
-  if (vinMsg || yearMsg || obd.error) return
-  state.draft = {
-    vin: normalizeVin(vin),
-    ...(makeInput ? { make: makeInput } : {}),
-    ...(modelInput ? { model: modelInput } : {}),
-    ...(yearInput ? { year: yearInput } : {}),
-    photos: photoStores['inspUpload'] || [],
-    codes: obd.codes,
-  }
+  submitInspection('insp', Object.fromEntries(VIN_FIELDS.map(field => [field, vinField(field).value.trim()])))
+}
+
+function submitInspection(prefix, vehicle = {}) {
+  const vin = normalizeVin(document.getElementById(prefix + 'Vin').value)
+  const obd = parseObdCodes(document.getElementById(prefix + 'Obd').value)
+  const photos = photoStores[prefix + 'Upload']
+  const vinMsg = vin ? validateVin(vin) : ''
+  const yearMsg = validateYear(vehicle.year)
+  const noEvidence = !vin && !photos.length && !obd.codes.length && !obd.error
+  showErr(prefix + 'VinErr', vinMsg)
+  showErr(prefix + 'ObdErr', obd.error)
+  showErr(prefix + 'EvidenceErr', noEvidence ? t('evidenceRequired') : '')
+  if (prefix === 'insp') showErr('inspYearErr', yearMsg)
+  if (vinMsg || yearMsg || obd.error || noEvidence) return
+  state.draft = { vin, ...vehicle, photos, codes: obd.codes }
   goTo('analyzing')
   startAnalysis()
 }
@@ -1006,10 +1014,11 @@ async function startAnalysis() {
 
   try {
     const fd = new FormData()
-    fd.append('vin', draft.vin)
+    if (draft.vin) fd.append('vin', draft.vin)
     if (draft.make) fd.append('make', draft.make)
     if (draft.model) fd.append('model', draft.model)
     if (draft.year) fd.append('year', draft.year)
+    if (draft.codes.length) fd.append('obdCodes', draft.codes.join(','))
     draft.photos.forEach(p => fd.append('photos', p.file))
     const submittedViews = draft.photos.map(photo => photo.view)
 
@@ -1019,10 +1028,6 @@ async function startAnalysis() {
 
     const fetchPromise = fetch('/api/analyze', { method: 'POST', body: fd })
       .then(response => ({ response }), error => ({ error }))
-    const obdPromise = draft.codes?.length ? fetchObdBatch(draft.codes).catch(() =>
-      draft.codes.map(code => ({ code, source: 'unavailable' }))
-    ) : Promise.resolve([])
-
     await delay(600)
     if (draft !== state.draft) return
     renderStages(1)
@@ -1046,12 +1051,10 @@ async function startAnalysis() {
     }
 
     const report = await response.json()
-    report.obd = await obdPromise
     if (draft !== state.draft) return
-    state.report?.photos.forEach(url => URL.revokeObjectURL(url))
     report.photos = fd.getAll('photos').map(file => URL.createObjectURL(file))
     report.submittedViews = submittedViews
-    state.report = report
+    setCurrentReport(report)
 
     document.getElementById('analyzeBar').style.width = '100%'
     renderStages(4)
@@ -1111,11 +1114,13 @@ function scoreSVG(score) {
 function renderReport() {
   const r = state.report
   if (!r) return
+  if (r.isExample) Object.assign(r, localizedCamryExample())
   const { make, model, year } = r.vehicle
   const title = [year, make, model].filter(Boolean).join(' ') || t('vehInfo')
   const pinLeft = Math.min(95, Math.max(5, 100 - r.score))
   const infoRows = [
-    ['VIN', r.vin],
+    ['VIN', r.vin || t('vinNotProvided'), r.isExample ? t('sampleVin') : ''],
+    ...(r.city ? [[t('reportCity'), r.city]] : []),
     [t('labelBrand'), make, vinSourceLabel(r.vehicleSources?.make)],
     [t('labelModel'), model, vinSourceLabel(r.vehicleSources?.model)],
     [t('labelYear'), year, vinSourceLabel(r.vehicleSources?.year)],
@@ -1139,61 +1144,68 @@ function renderReport() {
     <div class="rhead">
       <div>
         <h1 style="font-size:clamp(1.8rem,4vw,2.4rem);margin-bottom:6px">${escapeHtml(title)}</h1>
-        <code>${escapeHtml(r.vin)}</code>
+        <code>${escapeHtml(r.vin || t('vinNotProvided'))}</code>
+        ${r.city ? `<p class="hint">${escapeHtml(r.city)}</p>` : ''}
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${r.isExample ? `<button type="button" class="btn"
+          onclick="document.getElementById('compareForm').requestSubmit();document.getElementById('compareSaveStatus').scrollIntoView({block:'center'})">${t('compareSave')}</button>` : ''}
         <button class="btn ghost" onclick="newInspection()">${t('btnNewInsp')}</button>
         <button class="btn" onclick="window.print()">${t('btnPdf')}</button>
       </div>
     </div>
 
-    ${r.isDemo ? `<div class="demo-banner">${t('inspectionDemo')}</div>` : ''}
+    ${r.isExample ? `<div class="demo-banner">${t('sampleBanner')}</div>` : ''}
 
     <div class="cols2">
-      <div class="card center2">
+      ${r.hasPhotos ? `<div class="card center2">
         <h3 style="margin-bottom:16px">${t('overallCond')}</h3>
-        ${Number.isFinite(r.score) ? scoreSVG(r.score) : '<p>—</p>'}
+        ${Number.isFinite(r.score) ? scoreSVG(r.score) : `<p>${t('photoUnavailable')}</p>`}
       </div>
       <div class="card">
         <h3>${t('riskTitle')} &nbsp;${chip(r.risk)}</h3>
         ${r.risk ? `<div class="meter"><div class="meter-pin" style="left:${pinLeft}%"></div></div>
         <p>${escapeHtml(r.recs[0])}</p>` : '<p>—</p>'}
-      </div>
+      </div>` : ''}
       <div class="card">
         <h3>${t('vehInfo')}</h3>
         ${specRows(infoRows)}
       </div>
-      <div class="card">
+      ${r.specs.length ? `<div class="card">
         <h3>${t('specsTitle')}</h3>
-        ${r.specsAreDemo ? `<p class="hint">${t('sampleSpecs')}</p>` : ''}
-        ${r.specs.length ? specRows(r.specs) : '<p>—</p>'}
-      </div>
+        ${specRows(r.specs)}
+      </div>` : ''}
     </div>
 
+    ${r.vin ? `
     <div class="card" style="margin-top:18px">
       <h3>${t('historyTitle')}</h3>
       ${r.history.length ? specRows(r.history) : `<p class="hint">${t('historyUnavailable')}</p>`}
-    </div>
+    </div>` : ''}
 
     <div class="card" style="margin-top:18px">
       <h3>${t('visualTitle')}</h3>
-      ${photoCoverage(r)}
+      ${r.hasPhotos ? photoCoverage(r) : ''}
       ${photosHtml}
       ${damagesHtml}
     </div>
 
-    <div class="card" style="margin-top:18px">
+    ${r.blindSpots?.length ? `<section class="card tool-card"><h3>${t('blindSpotsTitle')}</h3>${resultList(r.blindSpots)}</section>` : ''}
+    ${repairEstimateHtml(r)}
+
+    ${r.recs.length > (r.risk ? 1 : 0) ? `<div class="card" style="margin-top:18px">
       <h3>${t('recsTitle')}</h3>
-      <ul class="recs">${r.recs.slice(r.risk ? 1 : 0).map(rec => `<li>${escapeHtml(rec)}</li>`).join('') || '<li>—</li>'}</ul>
-    </div>
+      ${resultList(r.recs.slice(r.risk ? 1 : 0))}
+    </div>` : ''}
 
     ${r.obd.length ? `<section class="card tool-card"><h3>${t('obdLabel')}</h3>${obdResultsHtml(r.obd)}</section>` : ''}
     <section id="reportChecklist" class="card tool-card"></section>
     ${compareForm(r)}
-    <p style="color:var(--mut);font-size:.82rem;margin-top:20px;text-align:center">${t('generatedAtText')} ${escapeHtml(r.generatedAt)}</p>
+    ${r.generatedAt ? `<p style="color:var(--mut);font-size:.82rem;margin-top:20px;text-align:center">${t('generatedAtText')} ${escapeHtml(r.generatedAt)}</p>` : ''}
   `
   refreshChecklists()
   bindCompareForm()
+  bindRepairEstimate(r)
 }
 
 // ═══════════════════════════════════════════════
@@ -1300,6 +1312,7 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 </script>
 <script src="/inspection-tools.js"></script>
+<script src="/report-example.js"></script>
 </body>
 </html>
 

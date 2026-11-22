@@ -20,7 +20,8 @@ const TOOL_TEXT = {
     sourceManual: 'Введено вручную', sourceWmi: 'Локальный справочник WMI (предварительно)',
     checklistTitle: 'Чек-лист очного осмотра',
     checklistHint: 'Отмечайте выполненные шаги. Отметки сохраняются в этом браузере для текущего VIN.',
-    checklistVin: 'Введите VIN, чтобы отмечать выполненные шаги.',
+    checklistVin: 'Введите VIN или сформируйте отчёт, чтобы отмечать выполненные шаги.',
+    checklistReport: 'Отметки сохраняются в этом браузере для этого отчёта.',
     checks: ['Сверить VIN на автомобиле и в документах', 'Проверить холодный запуск двигателя',
       'Провести тест-драйв', 'Осмотреть днище и подвеску на подъёмнике'],
     checksDone: 'Проверок выполнено', storageError: 'Браузер не смог сохранить изменения.',
@@ -40,8 +41,6 @@ const TOOL_TEXT = {
     comparePhotoFindings: 'Замечания по фото', comparePhotoClean: 'На оценённых фото замечаний нет',
     compareDemo: 'Демо-оценка', compareObdEmpty: 'Коды не введены',
     comparisonDetails: 'Данные для сравнения', wholeNumbers: 'Введите целые неотрицательные числа.',
-    inspectionDemo: 'Фотоанализ в демо-режиме. Оценка, примеры замечаний и история иллюстративные. Данные VIN и OBD-II имеют отдельно указанный источник.',
-    sampleSpecs: 'Пример характеристик для демо-отчёта.',
   },
   kz: {
     navCompare: 'Салыстыру', compareTitle: 'Автокөліктерді салыстыру',
@@ -57,7 +56,8 @@ const TOOL_TEXT = {
     sourceManual: 'Қолмен енгізілді', sourceWmi: 'Жергілікті WMI анықтамалығы (алдын ала)',
     checklistTitle: 'Көлікті көзбе-көз тексеру тізімі',
     checklistHint: 'Орындалған қадамдарды белгілеңіз. Белгілер осы браузерде осы VIN бойынша сақталады.',
-    checklistVin: 'Орындалған қадамдарды белгілеу үшін VIN енгізіңіз.',
+    checklistVin: 'Орындалған қадамдарды белгілеу үшін VIN енгізіңіз немесе есеп жасаңыз.',
+    checklistReport: 'Белгілер осы есеп үшін браузерде сақталады.',
     checks: ['Көліктегі VIN-ді құжатпен салыстыру', 'Қозғалтқыштың суық күйде іске қосылуын тексеру',
       'Сынақ жүргізу', 'Көліктің түбі мен аспасын көтергіште қарау'],
     checksDone: 'Орындалған тексерулер', storageError: 'Браузер өзгерістерді сақтай алмады.',
@@ -77,8 +77,6 @@ const TOOL_TEXT = {
     comparePhotoFindings: 'Фотодағы ескертулер', comparePhotoClean: 'Бағаланған фотоларда ескерту жоқ',
     compareDemo: 'Демо бағалау', compareObdEmpty: 'Кодтар енгізілмеді',
     comparisonDetails: 'Салыстыру деректері', wholeNumbers: 'Теріс емес бүтін сандарды енгізіңіз.',
-    inspectionDemo: 'Фото талдау демо режимінде. Бағалау, ескертулер мен тарих үлгі ретінде берілген. VIN және OBD-II деректерінің дереккөзі бөлек көрсетіледі.',
-    sampleSpecs: 'Демо есепке арналған сипаттамалар үлгісі.',
   },
   en: {
     navCompare: 'Compare', compareTitle: 'Compare Vehicles',
@@ -94,7 +92,8 @@ const TOOL_TEXT = {
     sourceManual: 'Entered manually', sourceWmi: 'Local WMI reference (preliminary)',
     checklistTitle: 'In-Person Inspection Checklist',
     checklistHint: 'Mark each completed step. Your progress is saved in this browser for the current VIN.',
-    checklistVin: 'Enter a VIN to mark completed steps.',
+    checklistVin: 'Enter a VIN or create a report to mark completed steps.',
+    checklistReport: 'Your progress is saved for this report in this browser.',
     checks: ['Match the VIN on the vehicle and documents', 'Check the engine’s cold start',
       'Take a test drive', 'Inspect the underbody and suspension on a lift'],
     checksDone: 'Checks completed', storageError: 'The browser could not save the changes.',
@@ -114,8 +113,6 @@ const TOOL_TEXT = {
     comparePhotoFindings: 'Photo findings', comparePhotoClean: 'No issues detected in the assessed photos',
     compareDemo: 'Sample assessment', compareObdEmpty: 'No codes entered',
     comparisonDetails: 'Comparison details', wholeNumbers: 'Enter nonnegative whole numbers.',
-    inspectionDemo: 'Photo analysis is in demo mode. The score, example findings and history are illustrative. VIN and OBD-II results show their own sources.',
-    sampleSpecs: 'Example specifications for the demo report.',
   },
 }
 
@@ -173,7 +170,7 @@ function newInspection() {
   vin.value = ''
   vin.dispatchEvent(new Event('input'))
   document.getElementById('inspObd').value = ''
-  for (const id of ['inspObdErr', 'inspVinErr', 'inspYearErr', 'inspUpload-errbox']) showErr(id, '')
+  for (const id of ['inspObdErr', 'inspVinErr', 'inspYearErr', 'inspEvidenceErr', 'inspUpload-errbox']) showErr(id, '')
   photoStores.inspUpload.forEach(photo => URL.revokeObjectURL(photo.url))
   photoStores.inspUpload.length = 0
   renderThumbs('inspUpload')
@@ -260,20 +257,21 @@ function readArray(key) {
 
 function refreshChecklists() {
   const inspectVin = normalizeVin(document.getElementById('inspVin').value)
-  renderChecklist('inspectChecklist', validateVin(inspectVin) ? '' : inspectVin)
-  renderChecklist('reportChecklist', state.report?.vin)
+  renderChecklist('inspectChecklist', validateVin(inspectVin) ? '' : inspectVin, 'checklistHint')
+  const report = state.report
+  renderChecklist('reportChecklist', report?.id, report?.vin && !report.isExample ? 'checklistHint' : 'checklistReport')
 }
 
-function renderChecklist(id, vin) {
+function renderChecklist(id, identity, hint) {
   const card = document.getElementById(id)
   if (!card) return
-  const key = 'kolikcheck.checklist.v1.' + vin
-  const stored = vin ? readArray(key) : []
+  const key = 'kolikcheck.checklist.v1.' + identity
+  const stored = identity ? readArray(key) : []
   const checked = CHECK_ITEMS.filter(item => stored.includes(item))
-  card.dataset.vin = vin || ''
+  card.dataset.identity = identity || ''
   card.innerHTML = `<h3>${t('checklistTitle')}</h3>
-    <p>${t(vin ? 'checklistHint' : 'checklistVin')}</p>
-    <fieldset class="checklist" aria-label="${t('checklistTitle')}" ${vin ? '' : 'disabled'}>
+    <p>${t(identity ? hint : 'checklistVin')}</p>
+    <fieldset class="checklist" aria-label="${t('checklistTitle')}" ${identity ? '' : 'disabled'}>
       ${CHECK_ITEMS.map((item, i) => `<label><input type="checkbox" value="${item}" ${checked.includes(item) ? 'checked' : ''}>${t('checks')[i]}</label>`).join('')}
     </fieldset>
     <p data-progress aria-live="polite">${t('checksDone')} · ${checked.length}/${CHECK_ITEMS.length}</p>
@@ -290,7 +288,7 @@ function renderChecklist(id, vin) {
     }
     for (const targetId of ['inspectChecklist', 'reportChecklist']) {
       const target = document.getElementById(targetId)
-      if (target?.dataset.vin !== vin) continue
+      if (target?.dataset.identity !== identity) continue
       for (const checkbox of target.querySelectorAll('input')) checkbox.checked = values.includes(checkbox.value)
       target.querySelector('[data-progress]').textContent = `${t('checksDone')} · ${values.length}/${CHECK_ITEMS.length}`
       target.querySelector('[data-check-error]').textContent = ''
@@ -299,12 +297,15 @@ function renderChecklist(id, vin) {
 }
 
 function savedVehicles() {
-  return readArray(COMPARE_KEY).filter(row => typeof row?.vin === 'string' && !validateVin(row.vin)).slice(0, 3)
+  return readArray(COMPARE_KEY)
+    .filter(row => typeof row?.id === 'string' || (typeof row?.vin === 'string' && !validateVin(row.vin)))
+    .slice(0, 3)
+    .map(row => ({ ...row, id: row.id || row.vin }))
 }
 
 function compareForm(report) {
-  const saved = savedVehicles().find(vehicle => vehicle.vin === report.vin)
-  const values = report.comparisonDraft ?? saved ?? {}
+  const saved = savedVehicles().find(vehicle => vehicle.id === report.id)
+  const values = report.comparisonDraft ?? saved ?? report.comparisonDefaults ?? {}
   return `<section class="card tool-card comparison-editor">
     <h3>${t('comparisonDetails')}</h3>
     <form id="compareForm">
@@ -335,16 +336,18 @@ function bindCompareForm() {
       return
     }
     const vehicles = savedVehicles()
-    const position = vehicles.findIndex(row => row.vin === report.vin)
+    const position = vehicles.findIndex(row => row.id === report.id)
     if (position === -1 && vehicles.length >= 3) {
       status.textContent = t('compareFull')
       return
     }
+    const estimate = repairTotals(report.repairCosts)
     const snapshot = {
-      vin: report.vin, title: Object.values(report.vehicle).filter(Boolean).join(' '),
+      id: report.id, vin: report.vin, title: Object.values(report.vehicle).filter(Boolean).join(' '),
       price: values.price, mileage: values.mileage,
-      isDemo: report.isDemo, photoAnalyzed: report.photoAnalyzed,
-      photoFindings: report.isDemo ? [] : report.damages.map(row => `${row.part} · ${row.issue}`),
+      isExample: report.isExample, photoAnalyzed: report.photoAnalyzed,
+      photoFindings: report.isExample ? [] : report.damages.map(row => `${row.part} · ${row.issue}`),
+      estimate: estimate.count && !estimate.invalid ? { low: estimate.low, high: estimate.high } : null,
       codes: report.obd.map(row => row.code),
     }
     if (position === -1) vehicles.push(snapshot)
@@ -365,7 +368,9 @@ function renderComparison() {
   const rows = [
     [t('comparePrice'), row => formatNumber(row.price)],
     [t('compareMileage'), row => formatNumber(row.mileage)],
+    [t('repairTitle'), row => row.estimate ? formatRepairRange(row.estimate) : '—'],
     [t('comparePhotoFindings'), row => {
+      if (row.isExample) return resultList(t('camry').defects.map(([part, issue]) => `${part} · ${issue}`))
       if (row.isDemo) return t('compareDemo')
       if (!row.photoAnalyzed) return t('photoMissing')
       return resultList(Array.isArray(row.photoFindings) ? row.photoFindings : []) || t('comparePhotoClean')
@@ -375,8 +380,9 @@ function renderComparison() {
   const table = vehicles.length ? `<div class="comparison-scroll" tabindex="0" aria-label="${t('compareTitle')}">
     <table class="comparison">
       <thead><tr><th scope="col">${t('vehInfo')}</th>${vehicles.map(row => `<th scope="col">
-        <div>${escapeHtml(row.title || row.vin)}</div><code>${escapeHtml(row.vin)}</code><br>
-        <button type="button" class="btn ghost sm" data-remove-vin="${escapeHtml(row.vin)}">${t('compareRemove')}</button>
+        <div>${escapeHtml(row.title || row.vin || t('vehInfo'))}</div>
+        <code>${escapeHtml(row.vin || t('vinNotProvided'))}</code>${row.isExample ? ` <small>${t('compareDemo')}</small>` : ''}<br>
+        <button type="button" class="btn ghost sm" data-remove-report="${escapeHtml(row.id)}">${t('compareRemove')}</button>
       </th>`).join('')}</tr></thead>
       <tbody>${rows.map(([label, value]) => `<tr><th scope="row">${label}</th>${vehicles.map(row => `<td>${value(row)}</td>`).join('')}</tr>`).join('')}</tbody>
     </table>
@@ -384,10 +390,10 @@ function renderComparison() {
   panel.innerHTML = `${table}<p id="compareRemoveStatus" class="err" role="status"></p>
     <button type="button" class="btn" onclick="newInspection()">${t('compareAdd')}</button>`
   panel.onclick = event => {
-    const vin = event.target.closest('[data-remove-vin]')?.dataset.removeVin
-    if (!vin) return
+    const id = event.target.closest('[data-remove-report]')?.dataset.removeReport
+    if (!id) return
     try {
-      localStorage.setItem(COMPARE_KEY, JSON.stringify(savedVehicles().filter(row => row.vin !== vin)))
+      localStorage.setItem(COMPARE_KEY, JSON.stringify(savedVehicles().filter(row => row.id !== id)))
       renderComparison()
     } catch {
       document.getElementById('compareRemoveStatus').textContent = t('storageError')
