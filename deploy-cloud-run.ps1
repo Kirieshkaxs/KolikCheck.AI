@@ -1,4 +1,4 @@
-# ════════════════════════════════════════════════════════════════════
+﻿# ════════════════════════════════════════════════════════════════════
 #  KolikCheck.AI — Развёртывание на Google Cloud Run
 #  Запуск:  powershell -ExecutionPolicy Bypass -File deploy-cloud-run.ps1
 # ═════════════════════════════════════════════════════════════════════
@@ -19,54 +19,46 @@ Write-Host "`n🚀 Начинаем развёртывание KolikCheck.AI н�
 Write-Host "   Проект: $PROJECT_ID | Регион: $REGION | Сервис: $SERVICE_NAME" -ForegroundColor Gray
 
 # ─── 1. Проверка инструментов ────────────────────────────────────────
-Write-Host "`n[1/7] Проверка инструментов (gcloud, docker)..." -ForegroundColor Yellow
+Write-Host "`n[1/6] Проверка инструментов (gcloud)..." -ForegroundColor Yellow
 
 $gcloud = Get-Command gcloud -ErrorAction SilentlyContinue
 if (-not $gcloud) {
     Write-Warning "gcloud CLI не найден. Установите Cloud SDK: https://cloud.google.com/sdk/docs/install"
     exit 1
 }
-$docker = Get-Command docker -ErrorAction SilentlyContinue
-if (-not $docker) {
-    Write-Warning "Docker не найден. Установите Docker Desktop: https://www.docker.com/products/docker-desktop"
-    exit 1
-}
-Write-Host "   ✓ gcloud и Docker найдены" -ForegroundColor Green
+Write-Host "   gcloud CLI found" -ForegroundColor Green
 
 # ─── 2. Аутентификация ───────────────────────────────────────────────
-Write-Host "`n[2/7] Аутентификация в Google Cloud..." -ForegroundColor Yellow
+Write-Host "`n[2/6] Аутентификация в Google Cloud..." -ForegroundColor Yellow
 gcloud auth login --brief
 if ($LASTEXITCODE -ne 0) { exit 1 }
 
 # ─── 3. Выбор проекта ────────────────────────────────────────────────
-Write-Host "`n[3/7] Настройка проекта: $PROJECT_ID" -ForegroundColor Yellow
+Write-Host "`n[3/6] Настройка проекта: $PROJECT_ID" -ForegroundColor Yellow
 gcloud config set project $PROJECT_ID
 if ($LASTEXITCODE -ne 0) { exit 1 }
-gcloud config set run/region $REGION
-gcloud config set run/platform managed
 
 # ─── 4. Включение необходимых API ────────────────────────────────────
-Write-Host "`n[4/7] Включение Google Cloud API..." -ForegroundColor Yellow
+Write-Host "`n[4/6] Включение Google Cloud API..." -ForegroundColor Yellow
 gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
 if ($LASTEXITCODE -ne 0) { exit 1 }
 Write-Host "   ✓ API включены" -ForegroundColor Green
 
 # ─── 5. Создание репозитория Artifact Registry ───────────────────────
-Write-Host "`n[5/7] Создание репозитория Artifact Registry..." -ForegroundColor Yellow
-gcloud artifacts repositories create $REPO_NAME --repository-format=docker --location=$REGION --description="Docker repo for KolikCheck.AI" 2>$null
-if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) { exit 1 }
+Write-Host "`n[5/6] Создание репозитория Artifact Registry..." -ForegroundColor Yellow
+gcloud artifacts repositories describe $REPO_NAME --location=$REGION 2>$null | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    gcloud artifacts repositories create $REPO_NAME --repository-format=docker --location=$REGION --description="Docker repo for KolikCheck.AI"
+    if ($LASTEXITCODE -ne 0) { exit 1 }
+}
 Write-Host "   ✓ Репозиторий готов ($REPO_NAME)" -ForegroundColor Green
 
-# ─── 6. Настройка Docker аутентификации ──────────────────────────────
-Write-Host "`n[6/7] Настройка Docker для Artifact Registry..." -ForegroundColor Yellow
-gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
-if ($LASTEXITCODE -ne 0) { exit 1 }
 
-# ─── 7. Сборка и развёртывание через Cloud Build ─────────────────────
-Write-Host "`n[7/7] Сборка образа и развёртывание на Cloud Run..." -ForegroundColor Yellow
-$IMAGE_URI = "$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:latest"
+# ─── 6. Сборка и развёртывание через Cloud Build ─────────────────────
+Write-Host "`n[6/6] Сборка образа и развёртывание на Cloud Run..." -ForegroundColor Yellow
+$IMAGE_URI = "$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/${IMAGE_NAME}:latest"
 
-gcloud builds submit --tag $IMAGE_URI .
+gcloud builds submit --tag $IMAGE_URI --ignore-file (Join-Path $PSScriptRoot ".dockerignore") $PSScriptRoot
 if ($LASTEXITCODE -ne 0) { exit 1 }
 
 # Читаем GEMINI_API_KEY из server/.env для передачи в Cloud Run
@@ -93,15 +85,19 @@ gcloud run deploy $SERVICE_NAME `
     --region $REGION `
     --allow-unauthenticated `
     --port $PORT `
-    --set-env-vars "GEMINI_API_KEY=$GEMINI_KEY" `
+    --update-env-vars "GEMINI_API_KEY=$GEMINI_KEY" `
     --memory $MEMORY `
     --cpu $CPU `
+    --concurrency 1 `
+    --execution-environment gen1 `
+    --cpu-throttling `
     --max-instances 10 `
     --timeout 300s
 if ($LASTEXITCODE -ne 0) { exit 1 }
 
 # ─── Готово ──────────────────────────────────────────────────────────
 $SERVICE_URL = (gcloud run services describe $SERVICE_NAME --region $REGION --format="value(status.url)")
+if ($LASTEXITCODE -ne 0) { exit 1 }
 
 Write-Host "`n═════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host "  ✅ Развёртывание завершено!" -ForegroundColor Green

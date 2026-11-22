@@ -5,14 +5,14 @@
 ---
 
 ## 📌 Problem & Context
-Purchasing a used car on the secondary market in Kazakhstan (over 1M+ transactions annually) is high-risk. Sellers frequently mask body damage, manipulate odometers, and clear Electronic Control Unit (ECU) error codes right before a deal. Professional pre-purchase inspection services are expensive and slow. **KolikCheck.AI** solves this information asymmetry by delivering instant, AI-driven vehicle diagnostics straight from a smartphone.
+Buying a used car can involve hidden body damage, unreliable mileage claims, and unresolved faults. **KolikCheck.AI** helps buyers review visible damage and interpret supplied fault codes before arranging an in-person inspection.
 
 ---
 
 ## 🛠️ Tech Stack
 * **Frontend:** HTML5 / CSS3 / Vanilla JavaScript — single-page application, no frameworks
-* **Backend:** Node.js + Express (REST API for vehicle analysis)
-* **AI & Computer Vision:** Google Gemini API — `gemini-3.8-flash` (multimodal analysis of body photos and OBD-II trouble codes)
+* **Backend:** Node.js 22+ and Express
+* **AI & Computer Vision:** Google Gemini API. The default model is `gemini-3.8-flash`, configurable through `GEMINI_MODEL`.
 * **File Uploads:** Multer (in-memory photo handling for Gemini API processing)
 
 ---
@@ -20,13 +20,14 @@ Purchasing a used car on the secondary market in Kazakhstan (over 1M+ transactio
 ## 🏗️ System Architecture
 ```text
 [ Client — SPA (HTML / CSS / JS) ]
+        ├──► Browser storage (checklists and comparison)
                 │
-          fetch /api/analyze
+          Same-origin REST API
                 ▼
 [ Server — Node.js + Express ]
-        ├──► Gemini API (AI Photo Defects & OBD-II DTC Parsing)
-        ├──► VIN Decoder via API (make, year from 17-char VIN; built-in fallback)
-        └──► Demo Fallback (when API key is not set)
+        ├──► NHTSA vPIC + local WMI reference (VIN lookup)
+        ├──► Local OBD-II reference (known trouble codes)
+        └──► Gemini API (photo assessment and additional OBD-II explanations)
                 │
                 ▼
 [ Unified KolikCheck.AI Report (JSON → rendered in browser) ]
@@ -35,10 +36,13 @@ Purchasing a used car on the secondary market in Kazakhstan (over 1M+ transactio
 ---
 
 ## 🚀 Key Features
-1. **VIN Decoder & Risk Score:** Extracts make, model year from the 17-character VIN and calculates an overall deal risk index.
-2. **AI Visual Inspection:** Uploads body photos to Gemini Vision, which flags scratches, dents, paint discrepancies, and alignment gaps panel by panel.
-3. **OBD-II DTC Diagnostics:** Sends complex ECU error codes (e.g. `P0300`) to Gemini and returns plain, actionable repair advice.
-4. **Instant Report:** Generates a full diagnostic brief with condition score, risk level, and buyer recommendations — viewable in browser or via `window.print()`.
+1. **Guided photo inspection.** Add front, rear, left, right, interior, and close-up photos. Select a view before uploading or label existing photos. The report shows which views Gemini assessed, which were submitted without an assessment, and which remain unchecked. Live condition scores and risk labels require a successful assessment.
+2. **VIN reference lookup.** Use **Decode VIN** to fill in the make, model, and model year when available. Results come from [NHTSA vPIC](https://vpic.nhtsa.dot.gov/api/), with a local WMI fallback for limited identification. Each populated field shows its source. Verify and edit the values against the vehicle documents.
+3. **Multi-code OBD-II lookup.** Enter up to 10 codes separated by spaces, commas, semicolons, or newlines. Results group the codes by system and suggest a check order based on severity. To include the codes in a report, enter them on the inspection form.
+4. **In-person checklist.** Track the VIN and document check, cold start, test drive, and lift inspection. The checklist is saved per VIN and is available on the inspection form and the report.
+5. **Vehicle comparison.** Enter the seller’s asking price in tenge and the stated mileage in the report, then choose **Save for comparison**. Open **Compare** to see up to three vehicles side by side by price, mileage, photo findings, and OBD-II codes. Saving the same VIN updates its entry. The comparison stores report details in the current browser, excluding photos.
+
+Use the browser’s print dialog from the report to save a PDF.
 
 ---
 
@@ -46,26 +50,26 @@ Purchasing a used car on the secondary market in Kazakhstan (over 1M+ transactio
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/<your-username>/KolikCheck.AI.git
+git clone https://github.com/Kirieshkaxs/KolikCheck.AI.git
 cd KolikCheck.AI
 
 # 2. Install server dependencies
-cd server
-npm install
+npm ci --prefix server
 
-# 3. Set your Gemini API key
-#    Copy .env.example → .env and paste your key
-cp ../.env.example .env
-#    Edit .env → GEMINI_API_KEY=your_actual_key
-#    Edit .env → VIN_DECODE_API_KEY=your_vin_decode_api_key  (optional; enables API-based VIN decoding)
+# 3. Optional for live analysis
+cp .env.example server/.env
+#    Edit server/.env and set GEMINI_API_KEY
 
 # 4. Start the server
 npm start
-#    → http://localhost:3000
+#    → http://localhost:8080
 ```
 
-> **Demo mode:** If `GEMINI_API_KEY` is not set, the server runs with sample data so you can explore the UI without an API key.
-> VIN decoding uses the external API when `VIN_DECODE_API_KEY` is set; otherwise it falls back to the built-in WMI/year tables.
+In PowerShell, use `Copy-Item .env.example server/.env` for step 3. The server reads `server/.env` regardless of the working directory. Set `PORT` there or in the environment to change the port.
+
+Without a key, the report shows a labeled sample photo assessment. VIN lookup, known OBD-II codes, the checklist, and comparison are available without Gemini. If Gemini fails while a key is configured, the report still shows the available VIN data and indicates that the photo assessment is unavailable.
+
+For Google Cloud Run, run `powershell -ExecutionPolicy Bypass -File deploy-cloud-run.ps1`. The script uses the Google Cloud CLI and Cloud Build and deploys a public service.
 
 ---
 
@@ -73,14 +77,20 @@ npm start
 ```
 KolikCheck.AI/
 ├── client/
-│   └── index.html        # SPA — landing page, inspect form, report
+│   ├── index.html          # SPA — inspection, reporting, OBD-II and comparison views
+│   └── inspection-tools.js # Photo coverage, checklist, batch OBD-II, comparison
 ├── server/
 │   ├── server.js          # Express API (analyze, analyze-obd, health)
+│   ├── obd-diagnostics.js # Local OBD-II reference
+│   ├── vin-decoder.js     # NHTSA vPIC lookup and local WMI fallback
 │   ├── package.json       # Server dependencies
+│   ├── package-lock.json
 │   └── .env               # API keys (git-ignored)
 ├── .env.example           # Template for .env
 ├── .gitignore
 ├── package.json           # Root convenience scripts
+├── Dockerfile
+├── deploy-cloud-run.ps1
 └── README.md
 ```
 
@@ -90,9 +100,12 @@ KolikCheck.AI/
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/analyze` | Full vehicle analysis — accepts VIN + optional photos (multipart/form-data) |
-| `POST` | `/api/analyze-obd` | OBD-II error code analysis — accepts `{ "code": "P0300" }` |
-| `GET`  | `/api/health` | Server status and mode (live / demo) |
+| `POST` | `/api/analyze` | Accepts multipart fields `vin`, optional `make`, `model`, `year`, and repeated `photos`. Returns vehicle fields with `vehicleSources` and the assessed photo views in `assessedViews` |
+| `POST` | `/api/analyze-obd` | Accepts `{ "codes": ["P0300", "P0420"] }` and returns `{ "results": [...] }` with a source per code. The original `{ "code": "P0300" }` format returns one result object |
+| `GET` | `/api/vin/:vin` | Returns `basic` vehicle fields, `fieldSources`, and `isPartial`. Reports missing fields as a partial result |
+| `GET` | `/api/health` | Server availability and configured mode (`live` or `demo`) |
+
+Photo uploads accept JPEG, PNG, and WebP, with a maximum of 10 files, 8 MiB per file, and 12 MiB total.
 
 ---
 
@@ -103,9 +116,8 @@ KolikCheck.AI/
 ---
 
 ## 🛡️ Responsible AI & Compliance (`AI-CARD`)
-* **Transparency:** Every diagnostic conclusion details the underlying physical cause and affected automotive subsystem.
-* **Security:** API keys are isolated via environment variables (`.env`). No sensitive owner personal data is retained.
-* **Disclaimer:** Designed as an intelligent assistant to mitigate 80% of blind spots on the secondary market; does not replace a comprehensive physical lift inspection at a certified service station.
+* **Data handling.** The server sends VINs to NHTSA vPIC for lookup and keeps uploaded photos in memory for the request. With a Gemini key configured, it sends photos and codes missing from the local reference to Gemini. Checklists and comparison entries stay in browser storage. Keep API keys in server-side environment variables.
+* **Coverage.** Registration, ownership, theft, and accident records appear only as examples in demo reports. Live reports depend on the supplied data and can contain incomplete or incorrect AI estimates. Confirm findings with vehicle documents and an in-person inspection.
 
 ---
 

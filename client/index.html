@@ -84,8 +84,9 @@ h3{font-size:1.05rem;margin-bottom:10px}
 /* ── form ── */
 .field{margin-bottom:16px}
 label{display:block;font-size:.9rem;font-weight:600;margin-bottom:6px}
-input[type=text],input[type=number]{width:100%;background:#0f1318;border:1px solid var(--line);color:var(--tx);padding:12px 14px;border-radius:12px;font-size:1rem;font-family:inherit;transition:.15s}
-input:focus{border-color:var(--blue);outline:none}
+input[type=text],input[type=number],textarea,select{width:100%;background:#0f1318;border:1px solid var(--line);color:var(--tx);padding:12px 14px;border-radius:12px;font-size:1rem;font-family:inherit;transition:.15s}
+input:focus,textarea:focus,select:focus{border-color:var(--blue);outline:none}
+textarea{resize:vertical}
 input.invalid{border-color:var(--red)!important}
 .err{color:var(--red);font-size:.87rem;margin-top:5px}
 .hint{font-size:.87rem;color:var(--mut);margin-top:10px}
@@ -102,6 +103,28 @@ input.invalid{border-color:var(--red)!important}
 .thumbs img{width:100%;height:100%;object-fit:cover;display:block}
 .thumbs button{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;border:0;background:#000b;color:#fff;cursor:pointer;font-size:.8rem}
 .thumbs.big{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.photo-guide{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+.photo-guide button{font-size:.83rem;padding:6px 10px}
+.photo-guide .next{border-color:var(--green);color:var(--green)}
+.thumbs.editable{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.thumbs.editable li{aspect-ratio:auto}
+.thumbs.editable img{height:94px}
+.thumbs.editable select{padding:6px;font-size:.84rem;border-radius:0}
+.tool-card{margin-top:18px}
+.checklist{border:0;min-width:0}
+.checklist label{display:flex;align-items:center;gap:10px;padding:6px 0;font-weight:400;cursor:pointer}
+.checklist input{accent-color:var(--green);width:17px;height:17px;flex:none}
+.obd-group{margin-top:16px}
+.obd-entry{padding:10px 0;border-top:1px solid var(--line)}
+.obd-heading{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.comparison-scroll{overflow-x:auto}
+.comparison{width:100%;border-collapse:collapse;text-align:left}
+.comparison th,.comparison td{padding:12px;vertical-align:top;border-bottom:1px solid var(--line)}
+.comparison thead th:not(:first-child){min-width:180px}
+.comparison tbody th{color:var(--mut);font-weight:500}
+.comparison td ul{padding-left:17px}
+.comparison code{white-space:nowrap}
+.comparison .btn{margin-top:6px}
 
 /* ── loading ── */
 .spin{width:72px;height:72px;border-radius:50%;border:5px solid #26334a;border-top-color:var(--blue);border-right-color:var(--green);animation:sp 1s linear infinite;margin:0 auto 22px}
@@ -148,6 +171,7 @@ footer strong{color:var(--tx)}
   .cols2,.row3{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media print{.comparison-editor{display:none}}
 </style>
 <style id="kolik-anim">
 /* ════════════════════════════════════════════════════════════════════════════════════
@@ -196,6 +220,7 @@ footer strong{color:var(--tx)}
       <a onclick="goTo('home');setTimeout(()=>document.getElementById('how').scrollIntoView({behavior:'smooth'}),50)" data-i18n="navHow">Как это работает</a>
       <a onclick="goTo('inspect')" class="btn sm" data-i18n="navInspect">Проверить авто</a>
       <a onclick="goTo('obd')" data-i18n="navObd">OBD-II коды</a>
+      <a onclick="goTo('compare')" data-i18n="navCompare">Сравнение</a>
       <div class="lang-switch">
         <button class="lang-btn active" onclick="setLang('ru')">RU</button>
         <button class="lang-btn" onclick="setLang('kz')">KZ</button>
@@ -214,6 +239,7 @@ footer strong{color:var(--tx)}
     <a onclick="goTo('inspect');toggleMobile()" data-i18n="navInspect">Проверить авто</a>
     <a onclick="goTo('report');toggleMobile()" data-i18n="navReport">Отчет</a>
     <a onclick="goTo('obd');toggleMobile()" data-i18n="navObd">OBD-II коды</a>
+    <a onclick="goTo('compare');toggleMobile()" data-i18n="navCompare">Сравнение</a>
   </div>
 </nav>
 
@@ -242,7 +268,7 @@ footer strong{color:var(--tx)}
     <div class="grid4">
       <div class="card"><div class="ico">🔎</div><h3 data-i18n="feat1Title">VIN Декодер</h3><p data-i18n="feat1Desc">Марка, модель, год выпуска и заводские характеристики прямо из 17-значного VIN.</p></div>
       <div class="card"><div class="ico">📷</div><h3 data-i18n="feat2Title">AI Осмотр кузова</h3><p data-i18n="feat2Desc">Загрузите фото — нейросеть выявит перекрасы, сколы, зазоры и дефекты деталей.</p></div>
-      <div class="card"><div class="ico">📋</div><h3 data-i18n="feat3Title">История и риски</h3><p data-i18n="feat3Desc">Комплексная оценка юридической чистоты и предыдущих инцидентов.</p></div>
+      <div class="card"><div class="ico">📋</div><h3 data-i18n="feat3Title">Отчёт об осмотре</h3><p data-i18n="feat3Desc">Оценка видимого состояния и рекомендации перед покупкой.</p></div>
       <div class="card"><div class="ico">⚠️</div><h3 data-i18n="feat4Title">Оценка рисков AI</h3><p data-i18n="feat4Desc">Понятный индекс состояния и список конкретных рекомендаций перед сделкой.</p></div>
     </div>
   </section>
@@ -267,17 +293,18 @@ footer strong{color:var(--tx)}
     <div class="card">
       <div class="field">
         <label for="inspVin" data-i18n="labelVinReq">VIN (обязательно)</label>
-        <input type="text" id="inspVin" maxlength="20" data-i18n-placeholder="vinPlaceholderInsp" oninput="this.value=this.value.toUpperCase(); clearManualFields()" />
-        <button type="button" class="btn sm" onclick="decodeVinFromApi()" id="btnDecodeVin" style="margin-left:8px;padding:6px 14px;font-size:.85rem" data-i18n="btnDecodeVin">РҐРµС…РїР°СЃРїРѕСЂС‚ VIN</button>
+        <input type="text" id="inspVin" maxlength="20" data-i18n-placeholder="vinPlaceholderInsp" oninput="this.value=this.value.toUpperCase()" />
+        <button type="button" class="btn sm" onclick="decodeVinFromApi()" id="btnDecodeVin" style="margin-left:8px;padding:6px 14px;font-size:.85rem" data-i18n="btnDecodeVin">Расшифровать VIN</button>
         <div class="err" id="inspVinErr" style="display:none"></div>
         <div id="decodeVinStatus" style="font-size:.8rem;color:var(--mut);margin-top:4px;min-height:1.2rem"></div>
       </div>
       <div class="row3">
-        <div class="field"><label for="inspMake" data-i18n="labelBrand">Марка</label><input type="text" id="inspMake" placeholder="Toyota" /></div>
-        <div class="field"><label for="inspModel" data-i18n="labelModel">Модель</label><input type="text" id="inspModel" placeholder="Camry" /></div>
+        <div class="field"><label for="inspMake" data-i18n="labelBrand">Марка</label><input type="text" id="inspMake" maxlength="120" placeholder="Toyota" /><small id="inspMakeSource" class="hint"></small></div>
+        <div class="field"><label for="inspModel" data-i18n="labelModel">Модель</label><input type="text" id="inspModel" maxlength="120" placeholder="Camry" /><small id="inspModelSource" class="hint"></small></div>
         <div class="field">
           <label for="inspYear" data-i18n="labelYear">Год</label>
-          <input type="number" id="inspYear" placeholder="2019" min="1980" max="2027" />
+          <input type="number" id="inspYear" placeholder="2019" min="1980" />
+          <small id="inspYearSource" class="hint"></small>
           <div class="err" id="inspYearErr" style="display:none"></div>
         </div>
       </div>
@@ -285,8 +312,14 @@ footer strong{color:var(--tx)}
         <label data-i18n="labelPhotos">Фотографии (для компьютерного зрения AI)</label>
         <div id="inspUpload"></div>
       </div>
+      <div class="field">
+        <label for="inspObd" data-i18n="inspectObd">Коды OBD-II (необязательно)</label>
+        <textarea id="inspObd" rows="2" maxlength="160" placeholder="P0300, P0420"></textarea>
+        <div id="inspObdErr" class="err" style="display:none"></div>
+      </div>
       <button class="btn full" onclick="inspSubmit()" data-i18n="btnAnalyze">Анализировать авто</button>
     </div>
+    <section id="inspectChecklist" class="card tool-card"></section>
   </main>
   <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
 </div>
@@ -333,8 +366,8 @@ footer strong{color:var(--tx)}
 
     <div class="card">
       <div class="field">
-        <label data-i18n="obdLabel">Код ошибки OBD-II</label>
-        <input type="text" id="obdCode" maxlength="7" placeholder="P0300" autocomplete="off" style="text-transform:uppercase" />
+        <label for="obdCode" data-i18n="obdLabel">Коды OBD-II</label>
+        <textarea id="obdCode" rows="3" maxlength="160" placeholder="P0300, P0420" autocomplete="off" style="text-transform:uppercase"></textarea>
         <div class="err" id="obdErr"></div>
       </div>
       <button class="btn full" id="obdBtn" onclick="analyzeOBD()">
@@ -343,9 +376,16 @@ footer strong{color:var(--tx)}
       <div id="obdResult" style="display:none;margin-top:22px"></div>
     </div>
 
-    <p style="margin-top:16px;color:var(--mut);font-size:.87rem;text-align:center" data-i18n="obdHint">Если ключ GEMINI_API_KEY не настроен на сервере, показывается демо-ответ из локальной базы.</p>
+    <p style="margin-top:16px;color:var(--mut);font-size:.87rem;text-align:center" data-i18n="obdHint">Известные коды доступны из локального справочника без Gemini.</p>
   </main>
   <footer><strong>KolikCheck.AI</strong> — <span data-i18n="footerTagline">Знай, что покупаешь.</span> &nbsp;·&nbsp; StartUp Battle IT FEST 2026</footer>
+</div>
+
+<div class="page" id="page-compare">
+  <main class="wrap sec">
+    <h2 data-i18n="compareTitle">Сравнение автомобилей</h2>
+    <div id="comparisonContent" class="card"></div>
+  </main>
 </div>
 
 <script>
@@ -377,8 +417,8 @@ const I18N = {
     feat1Desc: "Марка, модель, год выпуска и заводские характеристики прямо из 17-значного VIN.",
     feat2Title: "AI Осмотр кузова",
     feat2Desc: "Загрузите фото — нейросеть выявит перекрасы, сколы, зазоры и дефекты деталей.",
-    feat3Title: "История и риски",
-    feat3Desc: "Комплексная оценка юридической чистоты и предыдущих инцидентов.",
+    feat3Title: "Отчёт об осмотре",
+    feat3Desc: "Оценка видимого состояния и рекомендации перед покупкой.",
     feat4Title: "Оценка рисков AI",
     feat4Desc: "Понятный индекс состояния и список конкретных рекомендаций перед сделкой.",
     howHeading: "Как это работает",
@@ -408,14 +448,13 @@ const I18N = {
     vinErrRequired: "Введите 17-значный VIN.",
     vinErrLen: "VIN должен содержать 17 символов. Вы ввели: ",
     vinErrChars: "VIN не может содержать буквы I, O или Q.",
-    decodeVinLoading: "Декодирование...",
     yearErr: "Укажите корректный год выпуска.",
     condGood: "Хорошее состояние",
     condFair: "Удовлетворительное",
     condBad: "Требует внимания",
     outOf100: "из 100",
-    riskTitle: "Оценка рисков",
-    overallCond: "Общее состояние",
+    riskTitle: "Риск по результатам фотоосмотра",
+    overallCond: "Видимое состояние",
     vehInfo: "Информация об автомобиле",
     specsTitle: "Характеристики",
     historyTitle: "История авто",
@@ -437,7 +476,16 @@ const I18N = {
     obdLabel: "Код ошибки OBD-II",
     obdBtn: "Проверить код",
     obdHint: "Если ключ GEMINI_API_KEY не настроен на сервере, показывается демо-ответ из локальной базы.",
-    obdErrRequired: "Введите код ошибки."
+    obdErrRequired: "Введите код ошибки.",
+    obdErrFormat: "Введите код OBD-II в формате P0300.",
+    obdLoading: "Идёт анализ…",
+    obdCauses: "Возможные причины",
+    obdLocal: "Источник — локальный справочник OBD-II.",
+    btnDecodeVin: "Расшифровать VIN",
+    decodeVinLoading: "Расшифровка…",
+    noVisibleDamage: "На предоставленных фото видимых повреждений не обнаружено.",
+    photoUnavailable: "Не удалось проанализировать фотографии.",
+    historyUnavailable: "Данные об истории автомобиля недоступны."
   },
   kz: {
     navHome: "Басты бет",
@@ -463,8 +511,8 @@ const I18N = {
     feat1Desc: "17 таңбалы VIN арқылы шыққан жылы, маркасы және зауыттық сипаттамалары.",
     feat2Title: "AI Шанақты тексеру",
     feat2Desc: "Фото жүктеңіз — жасанды интеллект сырылған, боялған және зақымдалған жерлерін табады.",
-    feat3Title: "Тарихы мен қауіптер",
-    feat3Desc: "Тіркеу тарихы мен бұрынғы оқиғаларды кешенді бағалау.",
+    feat3Title: "Тексеру есебі",
+    feat3Desc: "Көліктің сыртқы күйін бағалау және сатып алу алдындағы ұсыныстар.",
     feat4Title: "AI Қауіп деңгейі",
     feat4Desc: "Көліктің жалпы жағдайының нақты индексі және сатып алушыға кеңестер.",
     howHeading: "Қалай жұмыс істейді",
@@ -494,14 +542,13 @@ const I18N = {
     vinErrRequired: "17 таңбалы VIN енгізіңіз.",
     vinErrLen: "VIN 17 таңбадан тұруы керек. Сіз енгіздіңіз: ",
     vinErrChars: "VIN құрамында I, O немесе Q әріптері болмауы тиіс.",
-    decodeVinLoading: "Декодтелмеде...",
     yearErr: "Дұрыс шыққан жылын көрсетіңіз.",
     condGood: "Жақсы жағдайда",
     condFair: "Орташа жағдайда",
     condBad: "Назар аударуды талап етеді",
     outOf100: "/ 100",
-    riskTitle: "Қауіп деңгейі",
-    overallCond: "Жалпы жағдайы",
+    riskTitle: "Фото тексеру бойынша қауіп",
+    overallCond: "Сыртқы күйі",
     vehInfo: "Көлік туралы мәлімет",
     specsTitle: "Техникалық сипаттамалар",
     historyTitle: "Көлік тарихы",
@@ -523,7 +570,16 @@ const I18N = {
     obdLabel: "OBD-II коды",
     obdBtn: "Кодты тексеру",
     obdHint: "Серверде GEMINI_API_KEY кілті қылмаған жағдайда, жергілікті базадан демо-жауап көрсетіледі.",
-    obdErrRequired: "Код сөзіңізді енгізіңіз."
+    obdErrRequired: "Ақау кодын енгізіңіз.",
+    obdErrFormat: "OBD-II кодын P0300 форматында енгізіңіз.",
+    obdLoading: "Талдау жүріп жатыр…",
+    obdCauses: "Ықтимал себептер",
+    obdLocal: "Дереккөз — жергілікті OBD-II анықтамалығы.",
+    btnDecodeVin: "VIN кодын ашу",
+    decodeVinLoading: "VIN коды ашылуда…",
+    noVisibleDamage: "Фотосуреттерден көзге көрінетін зақым табылмады.",
+    photoUnavailable: "Фотосуреттерді талдау мүмкін болмады.",
+    historyUnavailable: "Көлік тарихы туралы деректер қолжетімсіз."
   },
   en: {
     navHome: "Home",
@@ -549,8 +605,8 @@ const I18N = {
     feat1Desc: "Read the make, model year and factory specifications encoded in the 17-character VIN.",
     feat2Title: "AI Visual Inspection",
     feat2Desc: "Upload photos and get visible damage flagged panel by panel before you meet the seller.",
-    feat3Title: "Vehicle History",
-    feat3Desc: "See registration, ownership history and incident records gathered in one place.",
+    feat3Title: "Inspection report",
+    feat3Desc: "Review the vehicle’s visible condition and get pre-purchase recommendations.",
     feat4Title: "AI Risk Assessment",
     feat4Desc: "Get a clear risk level and an overall condition score so you know exactly where you stand.",
     howHeading: "How it works",
@@ -585,8 +641,8 @@ const I18N = {
     condFair: "Fair condition",
     condBad: "Needs attention",
     outOf100: "out of 100",
-    riskTitle: "Risk assessment",
-    overallCond: "Overall condition",
+    riskTitle: "Risk based on photos",
+    overallCond: "Visible condition",
     vehInfo: "Vehicle information",
     specsTitle: "Specifications",
     historyTitle: "Vehicle history",
@@ -608,7 +664,16 @@ const I18N = {
     obdLabel: "OBD-II Error Code",
     obdBtn: "Check Code",
     obdHint: "If GEMINI_API_KEY is not set on the server, a demo response from the local database is shown.",
-    obdErrRequired: "Enter an error code."
+    obdErrRequired: "Enter an error code.",
+    obdErrFormat: "Enter an OBD-II code in the format P0300.",
+    obdLoading: "Analyzing…",
+    obdCauses: "Possible causes",
+    obdLocal: "Source is the local OBD-II reference.",
+    btnDecodeVin: "Decode VIN",
+    decodeVinLoading: "Decoding…",
+    noVisibleDamage: "No visible damage was detected in the supplied photos.",
+    photoUnavailable: "The photos could not be analyzed.",
+    historyUnavailable: "Vehicle history is unavailable."
   }
 }
 
@@ -621,7 +686,7 @@ function t(key) {
 function setLang(lang) {
   if (!I18N[lang]) return;
   currentLang = lang;
-  document.documentElement.lang = lang;
+  document.documentElement.lang = lang === 'kz' ? 'kk' : lang;
 
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === lang);
@@ -651,25 +716,30 @@ function setLang(lang) {
       const p = drop.querySelector('p');
       if (strong) strong.textContent = t('uploadTitle');
       if (p) p.textContent = t('uploadSub');
+      renderThumbs(cid);
     }
   });
 
-  if (state.report) {
-    renderReport();
-  }
+  updateVinSourceLabels();
+  refreshChecklists();
+  renderComparison();
+  if (state.obd) renderObdResult(state.obd);
+  if (state.report) renderReport();
 }
 
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-const state = { draft: null, report: null }
+const state = { draft: null, report: null, obd: null }
 
 // ═══════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════
 function goTo(page) {
+  if (page !== 'analyzing') state.draft = null
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
   document.getElementById('page-' + page).classList.add('active')
+  if (page === 'compare') renderComparison()
   window.scrollTo(0, 0)
 }
 
@@ -685,19 +755,21 @@ const photoStores = {}
 
 function createUploadZone(containerId) {
   if (!photoStores[containerId]) photoStores[containerId] = []
-  const photos = photoStores[containerId]
   const el = document.getElementById(containerId)
   render()
 
   function render() {
     const html = `
+      <p class="hint" data-i18n="photoGuideHint">${t('photoGuideHint')}</p>
+      <div class="photo-guide" id="${containerId}-guide"></div>
+      <p class="hint" id="${containerId}-next" aria-live="polite"></p>
       <div class="drop" id="${containerId}-drop">
         <strong>${t('uploadTitle')}</strong>
         <p>${t('uploadSub')}</p>
         <input type="file" id="${containerId}-input" hidden multiple accept="image/jpeg,image/png,image/webp"/>
       </div>
       <div id="${containerId}-errbox" class="err" style="display:none;margin-top:6px"></div>
-      <ul class="thumbs" id="${containerId}-thumbs"></ul>
+      <ul class="thumbs editable" id="${containerId}-thumbs"></ul>
     `
     el.innerHTML = html
     bindZone(containerId)
@@ -706,21 +778,43 @@ function createUploadZone(containerId) {
   function bindZone(cid) {
     const drop = document.getElementById(cid + '-drop')
     const input = document.getElementById(cid + '-input')
+    let pickedView = ''
 
-    drop.addEventListener('click', () => input.click())
-    drop.addEventListener('keydown', e => (e.key === 'Enter' || e.key === ' ') && input.click())
+    function pick(view = '') {
+      pickedView = view
+      input.multiple = !view
+      input.click()
+    }
+
+    document.getElementById(cid + '-guide').addEventListener('click', e => {
+      const button = e.target.closest('button[data-view]')
+      if (button) pick(button.dataset.view)
+    })
+    document.getElementById(cid + '-thumbs').addEventListener('change', e => {
+      const photo = photoStores[cid].find(p => p.id === e.target.dataset.photoId)
+      if (photo) {
+        photo.view = e.target.value
+        renderPhotoGuide(cid)
+      }
+    })
+    drop.addEventListener('click', e => { if (e.target !== input) pick() })
+    drop.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      pick()
+    })
     drop.setAttribute('tabindex', '0')
     drop.setAttribute('role', 'button')
 
     drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over') })
     drop.addEventListener('dragleave', () => drop.classList.remove('over'))
     drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files, cid) })
-    input.addEventListener('change', e => { addFiles(e.target.files, cid); input.value = '' })
+    input.addEventListener('change', e => { addFiles(e.target.files, cid, pickedView); input.value = '' })
 
     renderThumbs(cid)
   }
 
-  function addFiles(files, cid) {
+  function addFiles(files, cid, view = '') {
     const errBox = document.getElementById(cid + '-errbox')
     const problems = []
     const store = photoStores[cid]
@@ -728,51 +822,48 @@ function createUploadZone(containerId) {
       if (!['image/jpeg','image/png','image/webp'].includes(f.type)) { problems.push(`${f.name}: JPG, PNG, WEBP`); return }
       if (f.size > 8 * 1024 * 1024) { problems.push(`${f.name} > 8 MB`); return }
       if (store.length >= 10) { problems.push('Max 10 photos'); return }
+      if (store.reduce((total, photo) => total + photo.file.size, f.size) > 12 * 1024 * 1024) {
+        problems.push('Max 12 MB total'); return
+      }
       const id = cid + '-' + Date.now() + '-' + Math.random()
-      store.push({ id, file: f, url: URL.createObjectURL(f) })
+      store.push({ id, file: f, url: URL.createObjectURL(f), view })
     })
     errBox.textContent = [...new Set(problems)].join(' ')
     errBox.style.display = problems.length ? 'block' : 'none'
     renderThumbs(cid)
   }
 
-  function renderThumbs(cid) {
-    const ul = document.getElementById(cid + '-thumbs')
-    if (!ul) return
-    const store = photoStores[cid]
-    if (!store.length) { ul.innerHTML = ''; return }
-    ul.innerHTML = store.map(p =>
-      `<li><img src="${p.url}" alt="${p.file.name}"/>
-       <button type="button" onclick="removePhoto('${cid}','${p.id}')" aria-label="Remove photo">✕</button></li>`
-    ).join('')
-  }
+}
+
+function renderThumbs(cid) {
+  const ul = document.getElementById(cid + '-thumbs')
+  ul.innerHTML = photoStores[cid].map(p =>
+    `<li><img src="${p.url}" alt="${escapeHtml(p.file.name)}"/>
+     <button type="button" onclick="removePhoto('${cid}','${p.id}')" aria-label="${t('removePhotoLabel')}">✕</button>
+     <select data-photo-id="${p.id}" aria-label="${t('photoViewLabel')}">
+       ${['', ...PHOTO_VIEWS].map(view => `<option value="${view}" ${p.view === view ? 'selected' : ''}>${photoViewLabel(view)}</option>`).join('')}
+     </select></li>`
+  ).join('')
+  renderPhotoGuide(cid)
 }
 
 function removePhoto(cid, id) {
   const store = photoStores[cid]
   const idx = store.findIndex(p => p.id === id)
   if (idx > -1) { URL.revokeObjectURL(store[idx].url); store.splice(idx, 1) }
-  document.getElementById(cid + '-thumbs').innerHTML = ''
-  const remaining = store
-  remaining.forEach(p => {
-    const ul = document.getElementById(cid + '-thumbs')
-    const li = document.createElement('li')
-    li.innerHTML = `<img src="${p.url}" alt="${p.file.name}"/>
-      <button type="button" onclick="removePhoto('${cid}','${p.id}')" aria-label="Remove photo">✕</button>`
-    ul.appendChild(li)
-  })
+  renderThumbs(cid)
 }
 
 // ═══════════════════════════════════════════════
 // VALIDATION
 // ═══════════════════════════════════════════════
-function normalizeVin(v) { return v.toUpperCase().replace(/[^A-Z0-9]/g,'') }
+function normalizeVin(v) { return v.trim().toUpperCase() }
 
 function validateVin(v) {
   const vin = normalizeVin(v)
   if (!vin) return t('vinErrRequired')
   if (vin.length !== 17) return t('vinErrLen') + vin.length
-  if (/[IOQ]/.test(vin)) return t('vinErrChars')
+  if (!/^[A-HJ-NPR-Z0-9]+$/.test(vin)) return t('vinErrChars')
   return ''
 }
 
@@ -780,7 +871,7 @@ function validateYear(v) {
   if (!v) return ''
   const y = Number(v)
   const max = new Date().getFullYear() + 1
-  return (Number.isInteger(y) && y >= 1980 && y <= max) ? '' : t('yearErr')
+  return (/^\d{4}$/.test(v) && y >= 1980 && y <= max) ? '' : t('yearErr')
 }
 
 function showErr(id, msg) {
@@ -807,43 +898,47 @@ function inspSubmit() {
   const yearInput = document.getElementById('inspYear').value
   const makeInput = document.getElementById('inspMake').value.trim()
   const modelInput = document.getElementById('inspModel').value.trim()
+  const obd = parseObdCodes(document.getElementById('inspObd').value)
   const vinMsg = validateVin(vin)
   const yearMsg = validateYear(yearInput)
   showErr('inspVinErr', vinMsg)
   showErr('inspYearErr', yearMsg)
-  if (vinMsg || yearMsg) return
+  showErr('inspObdErr', obd.error)
+  if (vinMsg || yearMsg || obd.error) return
   state.draft = {
     vin: normalizeVin(vin),
     ...(makeInput ? { make: makeInput } : {}),
     ...(modelInput ? { model: modelInput } : {}),
     ...(yearInput ? { year: yearInput } : {}),
-    photos: photoStores['inspUpload'] || []
+    photos: photoStores['inspUpload'] || [],
+    codes: obd.codes,
   }
   goTo('analyzing')
   startAnalysis()
 }
 
 // ═══════════════════════════════════════════════
-// VIN DECODE API (NHTSA vPIC + auto.dev fallback)
+// VIN DECODE API
 // ═══════════════════════════════════════════════
 
 async function decodeVinFromApi() {
   const vinInput = document.getElementById('inspVin')
-  const vin = vinInput.value.trim()
+  const vin = normalizeVin(vinInput.value)
   const statusEl = document.getElementById('decodeVinStatus')
   const btn = document.getElementById('btnDecodeVin')
 
-  if (!vin) {
-    statusEl.textContent = t('decodeVinRequired') || 'Сначала введите VIN-код'
+  const validation = validateVin(vin)
+  if (validation) {
+    statusEl.textContent = validation
     statusEl.style.color = 'var(--red)'
     return
   }
 
-  // Reset status
-  statusEl.textContent = t('decodeVinLoading') || 'Декодирование...'
+  const fieldsAtStart = Object.fromEntries(VIN_FIELDS.map(field => [field, vinField(field).value]))
+  statusEl.textContent = t('decodeVinLoading')
   statusEl.style.color = 'var(--amb)'
   btn.disabled = true
-  btn.textContent = 'Р“Г–Р·Г’ГЂРџ...'
+  btn.textContent = t('decodeVinLoading')
 
   try {
     const res = await fetch('/api/vin/' + encodeURIComponent(vin))
@@ -852,57 +947,36 @@ async function decodeVinFromApi() {
       throw new Error(data.error || 'Сервер вернул ошибку')
     }
     const data = await res.json()
-
-    const makeInput = document.getElementById('inspMake')
-    const modelInput = document.getElementById('inspModel')
-    const yearInput = document.getElementById('inspYear')
-
-    if (data.basic?.make) {
-      makeInput.value = data.basic.make
-      statusEl.textContent = 'Марка определена: ' + data.basic.make
-      statusEl.style.color = 'var(--green)'
+    if (vin !== normalizeVin(vinInput.value)) return
+    for (const field of VIN_FIELDS) {
+      const input = vinField(field)
+      if (input.value !== fieldsAtStart[field] || (input.value && input.dataset.source === 'manual')) continue
+      input.value = data.basic?.[field] ?? ''
+      input.dataset.source = input.value ? (data.fieldSources?.[field] ?? '') : ''
     }
-    if (data.basic?.model) {
-      modelInput.value = data.basic.model
-      statusEl.textContent += ' | Модель: ' + data.basic.model
-      statusEl.style.color = 'var(--green)'
-    }
-    if (data.basic?.year) {
-      yearInput.value = data.basic.year
-      if (statusEl.textContent) statusEl.textContent += ' | Год: ' + data.basic.year
-      else statusEl.textContent = 'Год: ' + data.basic.year
-      statusEl.style.color = 'var(--green)'
-    }
-
-    if (data.isPartial) {
-      statusEl.textContent += ' | Частичный декодер (модель не найдена)'
-      statusEl.style.color = 'var(--amber)'
-    } else {
-      statusEl.textContent += ' | Полный декодер'
-      statusEl.style.color = 'var(--green)'
-    }
+    updateVinSourceLabels()
+    const hasFields = VIN_FIELDS.some(field => data.basic?.[field])
+    statusEl.textContent = t(hasFields ? (data.isPartial ? 'vinPartial' : 'vinFound') : 'vinNoMatch')
+    statusEl.style.color = data.isPartial ? 'var(--amb)' : 'var(--green)'
 
   } catch (err) {
+    if (vin !== normalizeVin(vinInput.value)) return
     statusEl.textContent = err.message || 'Ошибка при декодировании VIN'
     statusEl.style.color = 'var(--red)'
   } finally {
     btn.disabled = false
-    btn.textContent = t('btnDecodeVin') || 'Р±Р°РґР°Г‘ВЂРџ VIN'
+    btn.textContent = t('btnDecodeVin')
   }
 }
 
-function clearManualFields() {
-  const vin = document.getElementById('inspVin').value
-  if (vin) {
-    document.getElementById('inspMake').value = ''
-    document.getElementById('inspModel').value = ''
-    document.getElementById('inspYear').value = ''
-  }
-}
 document.getElementById('inspVin')?.addEventListener('input', () => {
-  document.getElementById('inspMake').value = ''
-  document.getElementById('inspModel').value = ''
-  document.getElementById('inspYear').value = ''
+  for (const field of VIN_FIELDS) {
+    vinField(field).value = ''
+    vinField(field).dataset.source = ''
+  }
+  updateVinSourceLabels()
+  refreshChecklists()
+  document.getElementById('decodeVinStatus').textContent = ''
 })
 
 // ═══════════════════════════════════════════════
@@ -937,22 +1011,31 @@ async function startAnalysis() {
     if (draft.model) fd.append('model', draft.model)
     if (draft.year) fd.append('year', draft.year)
     draft.photos.forEach(p => fd.append('photos', p.file))
+    const submittedViews = draft.photos.map(photo => photo.view)
 
     // Stage 0
     renderStages(0)
     document.getElementById('analyzeBar').style.width = '15%'
 
     const fetchPromise = fetch('/api/analyze', { method: 'POST', body: fd })
+      .then(response => ({ response }), error => ({ error }))
+    const obdPromise = draft.codes?.length ? fetchObdBatch(draft.codes).catch(() =>
+      draft.codes.map(code => ({ code, source: 'unavailable' }))
+    ) : Promise.resolve([])
 
     await delay(600)
+    if (draft !== state.draft) return
     renderStages(1)
     document.getElementById('analyzeBar').style.width = '40%'
 
     await delay(600)
+    if (draft !== state.draft) return
     renderStages(2)
     document.getElementById('analyzeBar').style.width = '70%'
 
-    const response = await fetchPromise
+    const { response, error } = await fetchPromise
+    if (draft !== state.draft) return
+    if (error) throw error
 
     renderStages(3)
     document.getElementById('analyzeBar').style.width = '90%'
@@ -963,16 +1046,22 @@ async function startAnalysis() {
     }
 
     const report = await response.json()
-    report.photos = draft.photos.map(p => p.url)
+    report.obd = await obdPromise
+    if (draft !== state.draft) return
+    state.report?.photos.forEach(url => URL.revokeObjectURL(url))
+    report.photos = fd.getAll('photos').map(file => URL.createObjectURL(file))
+    report.submittedViews = submittedViews
     state.report = report
 
     document.getElementById('analyzeBar').style.width = '100%'
     renderStages(4)
     await delay(400)
+    if (draft !== state.draft) return
     renderReport()
     goTo('report')
 
   } catch(err) {
+    if (draft !== state.draft) return
     document.getElementById('analyzeSpin').style.display = 'none'
     document.getElementById('analyzeTitle').textContent = t('analyzeErrorTitle');
     document.getElementById('analyzeErrMsg').textContent = err.message || t('serverConnErr')
@@ -983,14 +1072,20 @@ async function startAnalysis() {
 // ═══════════════════════════════════════════════
 // REPORT RENDER
 // ═══════════════════════════════════════════════
+function escapeHtml(value) {
+  const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+  return String(value ?? '').replace(/[&<>"']/g, char => entities[char])
+}
+
 function chip(severity) {
+  if (!['Low', 'Medium', 'Moderate', 'High'].includes(severity)) return ''
   const label = (I18N[currentLang].severities && I18N[currentLang].severities[severity]) || severity
   return `<span class="chip ${severity}">${label}</span>`
 }
 
 function specRows(rows) {
-  return rows.map(([k,v]) =>
-    `<div class="spec-row"><span class="k">${k}</span><span class="v">${v || '<em style="color:var(--mut)">—</em>'}</span></div>`
+  return rows.map(([k,v,source]) =>
+    `<div class="spec-row"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(v || '—')}${source ? `<br><small class="hint">${escapeHtml(source)}</small>` : ''}</span></div>`
   ).join('')
 }
 
@@ -1021,46 +1116,48 @@ function renderReport() {
   const pinLeft = Math.min(95, Math.max(5, 100 - r.score))
   const infoRows = [
     ['VIN', r.vin],
-    [t('labelBrand'), make],
-    [t('labelModel'), model],
-    [t('labelYear'), year],
+    [t('labelBrand'), make, vinSourceLabel(r.vehicleSources?.make)],
+    [t('labelModel'), model, vinSourceLabel(r.vehicleSources?.model)],
+    [t('labelYear'), year, vinSourceLabel(r.vehicleSources?.year)],
   ]
 
   const photosHtml = r.photos.length
-    ? `<ul class="thumbs big">${r.photos.map(u => `<li><img src="${u}" alt="Vehicle photo"/></li>`).join('')}</ul>`
+    ? `<ul class="thumbs big">${r.photos.map((url, i) => `<li><img src="${url}" alt="${photoViewLabel(r.submittedViews[i])}"/></li>`).join('')}</ul>`
     : ''
 
   const damagesHtml = r.damages.length
     ? r.damages.map(d => `
         <div class="damage-row">
-          <div class="info"><strong>${d.part}</strong><span>${d.issue}</span></div>
+          <div class="info"><strong>${escapeHtml(d.part)}</strong><span>${escapeHtml(d.issue)}</span></div>
           ${chip(d.severity)}
         </div>`).join('')
-    : `<p class="hint">${t('noPhotosText')} <a onclick="goTo('inspect')">${t('runWithPhotos')}</a></p>`
+    : r.photoAnalyzed ? `<p class="hint">${t('noVisibleDamage')}</p>`
+    : r.hasPhotos ? `<p class="hint">${t('photoUnavailable')}</p>`
+    : `<p class="hint">${t('noPhotosText')} <a onclick="continueWithPhotos()">${t('runWithPhotos')}</a></p>`
 
   document.getElementById('reportContent').innerHTML = `
     <div class="rhead">
       <div>
-        <h1 style="font-size:clamp(1.8rem,4vw,2.4rem);margin-bottom:6px">${title}</h1>
-        <code>${r.vin}</code>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.4rem);margin-bottom:6px">${escapeHtml(title)}</h1>
+        <code>${escapeHtml(r.vin)}</code>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn ghost" onclick="goTo('inspect')">${t('btnNewInsp')}</button>
+        <button class="btn ghost" onclick="newInspection()">${t('btnNewInsp')}</button>
         <button class="btn" onclick="window.print()">${t('btnPdf')}</button>
       </div>
     </div>
 
-    ${r.isDemo ? `<div class="demo-banner">${t('demoBanner')}</div>` : ''}
+    ${r.isDemo ? `<div class="demo-banner">${t('inspectionDemo')}</div>` : ''}
 
     <div class="cols2">
       <div class="card center2">
         <h3 style="margin-bottom:16px">${t('overallCond')}</h3>
-        ${scoreSVG(r.score)}
+        ${Number.isFinite(r.score) ? scoreSVG(r.score) : '<p>—</p>'}
       </div>
       <div class="card">
         <h3>${t('riskTitle')} &nbsp;${chip(r.risk)}</h3>
-        <div class="meter"><div class="meter-pin" style="left:${pinLeft}%"></div></div>
-        <p>${r.recs[0]}</p>
+        ${r.risk ? `<div class="meter"><div class="meter-pin" style="left:${pinLeft}%"></div></div>
+        <p>${escapeHtml(r.recs[0])}</p>` : '<p>—</p>'}
       </div>
       <div class="card">
         <h3>${t('vehInfo')}</h3>
@@ -1068,28 +1165,35 @@ function renderReport() {
       </div>
       <div class="card">
         <h3>${t('specsTitle')}</h3>
-        ${specRows(r.specs)}
+        ${r.specsAreDemo ? `<p class="hint">${t('sampleSpecs')}</p>` : ''}
+        ${r.specs.length ? specRows(r.specs) : '<p>—</p>'}
       </div>
     </div>
 
     <div class="card" style="margin-top:18px">
       <h3>${t('historyTitle')}</h3>
-      ${specRows(r.history)}
+      ${r.history.length ? specRows(r.history) : `<p class="hint">${t('historyUnavailable')}</p>`}
     </div>
 
     <div class="card" style="margin-top:18px">
       <h3>${t('visualTitle')}</h3>
+      ${photoCoverage(r)}
       ${photosHtml}
       ${damagesHtml}
     </div>
 
     <div class="card" style="margin-top:18px">
       <h3>${t('recsTitle')}</h3>
-      <ul class="recs">${r.recs.slice(1).map(t => `<li>${t}</li>`).join('')}</ul>
+      <ul class="recs">${r.recs.slice(r.risk ? 1 : 0).map(rec => `<li>${escapeHtml(rec)}</li>`).join('') || '<li>—</li>'}</ul>
     </div>
 
-    <p style="color:var(--mut);font-size:.82rem;margin-top:20px;text-align:center">${t('generatedAtText')} ${r.generatedAt}</p>
+    ${r.obd.length ? `<section class="card tool-card"><h3>${t('obdLabel')}</h3>${obdResultsHtml(r.obd)}</section>` : ''}
+    <section id="reportChecklist" class="card tool-card"></section>
+    ${compareForm(r)}
+    <p style="color:var(--mut);font-size:.82rem;margin-top:20px;text-align:center">${t('generatedAtText')} ${escapeHtml(r.generatedAt)}</p>
   `
+  refreshChecklists()
+  bindCompareForm()
 }
 
 // ═══════════════════════════════════════════════
@@ -1127,7 +1231,7 @@ function renderReport() {
     if(!c){c=document.createElement('div');c.id='kaToastContainer';c.className='ka-toast';document.body.appendChild(c);}
     var item=document.createElement('div');item.className='ka-toast-item';
     var icon = {success:'\u2705',error:'\u274C'}[type] || '\u2139\uFE0F';
-    item.innerHTML = '<span style="font-size:1.25rem">'+icon+'</span><span>'+msg+'</span>';
+    item.innerHTML = '<span style="font-size:1.25rem">'+icon+'</span><span>'+escapeHtml(msg)+'</span>';
     c.appendChild(item);
     setTimeout(function(){item.classList.add('exit');setTimeout(function(){item.remove();},400);},3000);
   };
@@ -1158,79 +1262,44 @@ function renderReport() {
 // OBD-II ANALYSIS
 // ═════════════════════════════════════════════════
 async function analyzeOBD() {
-  const codeEl = document.getElementById('obdCode')
-  const errEl = document.getElementById('obdErr')
   const resultEl = document.getElementById('obdResult')
   const btnText = document.getElementById('obdBtnText')
-  const code = codeEl.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
-
-  if (!code) {
-    errEl.textContent = t('obdErrRequired') || 'Введите код ошибки.'
-    errEl.style.display = 'block'
-    return
-  }
-  if (code.length < 4 || code.length > 5) {
-    errEl.textContent = 'Формат кода: буква + 4 цифры (например, P0300).'
-    errEl.style.display = 'block'
-    return
-  }
-  errEl.style.display = 'none'
+  const button = btnText.closest('button')
+  if (button.disabled) return
+  const { codes, error } = parseObdCodes(document.getElementById('obdCode').value)
+  state.obd = null
   resultEl.style.display = 'none'
-  btnText.textContent = 'Идёт анализ...'
+
+  showErr('obdErr', error || (codes.length ? '' : t('obdErrRequired')))
+  if (error || !codes.length) return
+  button.disabled = true
+  btnText.textContent = t('obdLoading')
 
   try {
-    const res = await fetch('/api/analyze-obd', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
-    })
-    if (!res.ok) throw new Error('Ошибка сервера: ' + res.status)
-    const data = await res.json()
-    renderObdResult(data)
+    state.obd = await fetchObdBatch(codes)
+    renderObdResult(state.obd)
   } catch (e) {
-    btnText.textContent = 'Ошибка'
-    resultEl.style.display = 'block'
-    resultEl.innerHTML = `<div class="card" style="border-color:var(--red)"><div class="err">${e.message}</div></div>`
-    setTimeout(() => { btnText.textContent = t('obdBtn') || 'Проверить код' }, 1500)
+    showErr('obdErr', e.message)
+  } finally {
+    button.disabled = false
+    btnText.textContent = t('obdBtn')
   }
 }
 
-function renderObdResult(data) {
+function renderObdResult(results) {
   const resultEl = document.getElementById('obdResult')
-  const btnText = document.getElementById('obdBtnText')
-  const sev = data.severity || 'Medium'
-  const chipColor = sev === 'High' ? 'var(--red)' : sev === 'Moderate' ? 'var(--amb)' : 'var(--green)'
-
-  let html = `<div class="card" style="margin-top:12px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-      <strong style="font-size:1.1rem">${data.code}</strong>
-      <span class="chip" style="background:${chipColor}22;color:${chipColor};border:1px solid ${chipColor}">${sev}</span>
-    </div>
-    <p style="margin:0 0 10px">${data.description || 'Нет описания.'}</p>`
-
-  if (data.cause && data.cause.length) {
-    html += `<p style="margin:0 0 6px"><strong>Причина:</strong></p><ul style="margin:0 0 10px;padding-left:18px">${data.cause.map(c => `<li>${c}</li>`).join('')}</ul>`
-  }
-  if (data.recommendations && data.recommendations.length) {
-    html += `<p style="margin:0 0 10px"><strong>Рекомендации:</strong></p><ul style="margin:0;padding-left:18px">${data.recommendations.map(r => `<li>${r}</li>`).join('')}</ul>`
-  }
-  if (data.isDemo) {
-    html += `<p style="margin-top:10px;font-size:.85rem;color:var(--mut)">Демо-ответ (локальная база). Для ИИ-анализа настройте GEMINI_API_KEY на сервере.</p>`
-  }
-  html += `</div>`
-
-  resultEl.innerHTML = html
+  resultEl.innerHTML = obdResultsHtml(results)
   resultEl.style.display = 'block'
-  btnText.textContent = 'Готово'
-  setTimeout(() => { btnText.textContent = t('obdBtn') || 'Проверить код' }, 1500)
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('inspYear').max = new Date().getFullYear() + 1
   createUploadZone('heroUpload')
   createUploadZone('inspUpload')
   setLang('ru')
 })
 </script>
+<script src="/inspection-tools.js"></script>
 </body>
 </html>
 

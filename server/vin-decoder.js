@@ -5,6 +5,8 @@
 // ══════════════════════════════════════════════════════════════════════════════════
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const PARTIAL_CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_MAX_ENTRIES = 1000;
 const vinCache = new Map();
 
 function cacheGet(vin) {
@@ -13,10 +15,14 @@ function cacheGet(vin) {
   if (Date.now() > e.expiresAt) { vinCache.delete(vin); return null; }
   return e.data;
 }
-function cacheSet(vin, data) { vinCache.set(vin, { data, expiresAt: Date.now() + CACHE_TTL_MS }); }
+function cacheSet(vin, data, ttl = CACHE_TTL_MS) {
+  vinCache.delete(vin);
+  if (vinCache.size >= CACHE_MAX_ENTRIES) vinCache.delete(vinCache.keys().next().value);
+  vinCache.set(vin, { data, expiresAt: Date.now() + ttl });
+}
 
 function validateVin(vin) {
-  if (!vin) return 'VIN-код не указан.';
+  if (typeof vin !== 'string' || !vin.trim()) return 'VIN-код не указан.';
   const c = vin.toUpperCase().replace(/\s/g, '');
   if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(c)) {
     if (c.length !== 17) return `Неверная длина VIN (ожидается 17, получено ${c.length}).`;
@@ -38,7 +44,7 @@ function toBool(v) {
   if (s === 'false' || s === '0' || s === 'no' || s === 'нет') return false;
   return undefined;
 }
-const fetchJson = async (url, { timeoutMs = 15000 } = {}) => {
+const fetchJson = async (url, { timeoutMs = 4000 } = {}) => {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -57,7 +63,7 @@ const NHTSA_BASE = 'https://vpic.nhtsa.dot.gov/api/vehicles';
 const decodeViaNhtsa = async (vin) => {
   const url = `${NHTSA_BASE}/DecodeVinValuesExtended/${encodeURIComponent(vin)}?format=json`;
   const body = await fetchJson(url);
-  if (!body || !Array.isArray(body.Results) || body.Results.length === 0) return null;
+  if (!Array.isArray(body?.Results) || !body.Results[0]) return null;
   const r = body.Results[0];
   const make = firstNonEmpty(r, ['Make']);
   if (!make) return null;
@@ -215,23 +221,13 @@ const decodeViaWmi = (vin) => {
     VIN_MAKES_2[vin.slice(0, 2)] ||
     '';
   const i = YEAR_CODES.indexOf(vin[9]);
-  let year = '';
-  if (i >= 0) year = i < 21 ? (2010 + i).toString() : (2001 + (i - 21)).toString();
+  const firstYear = 1980 + i;
+  const hasSecondCycle = firstYear + 30 <= new Date().getFullYear() + 1;
   const basic = {};
   if (make) basic.make = make;
-  if (year) basic.year = year;
-  const manufacturing = {};
-  const countryMap = {
-    '1': 'USA', '2': 'Canada', '3': 'Mexico', 'J': 'Japan', 'K': 'Korea',
-    'S': 'England', 'W': 'Germany', 'Y': 'Sweden', '4': 'USA', '5': 'USA',
-    '6': 'Australia', '7': 'New Zealand', '8': 'Argentina', '9': 'Brazil',
-    'V': 'France', 'T': 'Switzerland', 'L': 'China', 'R': 'Taiwan',
-  };
-  const country = countryMap[vin[0]];
-  if (country) manufacturing.plantCountry = country;
+  if (make && i >= 0 && !hasSecondCycle) basic.year = String(firstYear);
   const result = {};
   if (Object.keys(basic).length) result.basic = basic;
-  if (Object.keys(manufacturing).length) result.manufacturing = manufacturing;
   return result;
 };
 
@@ -247,50 +243,31 @@ export const decodeVin = async (vin, { apiKey } = {}) => {
   if (cached) return cached;
 
   // 1. Primary: NHTSA vPIC
-  let result = await decodeViaNhtsa(cleanVin);
+  const result = (await decodeViaNhtsa(cleanVin)) ?? {};
+  result.basic ??= {};
+  const fieldSources = Object.fromEntries(Object.keys(result.basic).map(key => [key, 'vpic']));
 
-  // 2. Fallback: auto.dev if NHTSA missing Model and key is set
-  if (!result || !result.basic || !result.basic.model) {
-    if (apiKey) {
-      const fb = await decodeViaAutodev(cleanVin, apiKey);
-      if (fb) {
-        if (!result) result = {};
-        if (fb.basic) {
-          result.basic = { ...fb.basic, ...(result.basic || {}) };
-          for (const k of Object.keys(fb.basic)) if (result.basic[k] === undefined) result.basic[k] = fb.basic[k];
-        }
-        if (fb.engine) {
-          result.engine = { ...fb.engine, ...(result.engine || {}) };
-          for (const k of Object.keys(fb.engine)) if (result.engine[k] === undefined) result.engine[k] = fb.engine[k];
-        }
-        if (fb.manufacturing) {
-          result.manufacturing = { ...fb.manufacturing, ...(result.manufacturing || {}) };
-          for (const k of Object.keys(fb.manufacturing)) if (result.manufacturing[k] === undefined) result.manufacturing[k] = fb.manufacturing[k];
-        }
-      }
-    }
-
-    // 3. Last resort: WMI tables
-    if (!result || !result.basic || !result.basic.model) {
-      const wmi = decodeViaWmi(cleanVin);
-      if (!result) result = {};
-      if (!result.basic) result.basic = {};
-      if (wmi.basic) {
-        if (!result.basic.make) result.basic.make = wmi.basic.make;
-        if (!result.basic.year) result.basic.year = wmi.basic.year;
-      }
-      if (wmi.manufacturing) {
-        if (!result.manufacturing) result.manufacturing = {};
-        if (!result.manufacturing.plantCountry) result.manufacturing.plantCountry = wmi.manufacturing.plantCountry;
+  function fillMissing(data, source) {
+    for (const section of ['basic', 'engine', 'manufacturing']) {
+      for (const [key, value] of Object.entries(data?.[section] ?? {})) {
+        result[section] ??= {};
+        if (result[section][key]) continue;
+        result[section][key] = value;
+        if (section === 'basic') fieldSources[key] = source;
       }
     }
   }
 
-  const isPartial = !result || !result.basic || !result.basic.model;
-  const final = result || {};
-  final.isPartial = isPartial;
+  // 2. Fallback: auto.dev if NHTSA missing Model and key is set
+  if (!result.basic.model && apiKey) {
+    fillMissing(await decodeViaAutodev(cleanVin, apiKey), 'autodev');
+  }
+  fillMissing(decodeViaWmi(cleanVin), 'wmi');
+
+  const isPartial = !result.basic.make || !result.basic.model || !result.basic.year;
+  const final = { ...result, fieldSources, isPartial };
   final.vin = cleanVin;
-  cacheSet(cleanVin, final);
+  cacheSet(cleanVin, final, isPartial ? PARTIAL_CACHE_TTL_MS : CACHE_TTL_MS);
   return final;
 };
 
